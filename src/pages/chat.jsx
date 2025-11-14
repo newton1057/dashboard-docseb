@@ -1,6 +1,10 @@
 // src/pages/Chat.jsx
 
 import { useEffect, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
+import "./chat.css";
 
 const API_URL =
   "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/message";
@@ -310,73 +314,95 @@ export default function ChatMain({ palette }) {
             }}
           >
             <div
+              className="chat-scroll-wrapper"
               style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: 18,
-                maxHeight: "60vh",
-                overflowY: "auto",
+                position: "relative",
                 paddingRight: 8,
               }}
             >
-              {messages.map((msg) => {
-                const isUser = msg.role === "user";
-                const bubbleColor = isUser
-                  ? "rgba(210,242,82,0.15)"
-                  : "rgba(255,255,255,0.05)";
-                const borderColor = isUser
-                  ? "rgba(210,242,82,0.35)"
-                  : palette.border;
-                const label = msg.status === "thinking" ? "Pensando..." : "";
-                const typingHint =
-                  !isUser && msg.status === "typing"
-                    ? label
-                      ? " escribe…"
-                      : "Escribiendo…"
-                    : "";
-                const shouldShowLabel = label || typingHint;
-                return (
-                  <div
-                    key={msg.id}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                      alignItems: isUser ? "flex-end" : "flex-start",
-                    }}
-                  >
-                    {shouldShowLabel && (
-                      <span
-                        style={{
-                          fontSize: 12,
-                          letterSpacing: 0.4,
-                          color: "rgba(233,255,208,0.65)",
-                        }}
-                      >
-                        {label}
-                        {typingHint}
-                      </span>
-                    )}
+              <div
+                className="chat-scroll-area"
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 18,
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  paddingRight: 8,
+                }}
+              >
+                {messages.map((msg) => {
+                  const isUser = msg.role === "user";
+                  const bubbleColor = isUser
+                    ? "rgba(210,242,82,0.15)"
+                    : "rgba(255,255,255,0.05)";
+                  const borderColor = isUser
+                    ? "rgba(210,242,82,0.35)"
+                    : palette.border;
+                  const label = msg.status === "thinking" ? "Pensando..." : "";
+                  const typingHint =
+                    !isUser && msg.status === "typing"
+                      ? label
+                        ? " escribe…"
+                        : "Escribiendo…"
+                      : "";
+                  const shouldShowLabel = label || typingHint;
+                  return (
                     <div
+                      key={msg.id}
                       style={{
-                        maxWidth: "85%",
-                        padding: "14px 16px",
-                        borderRadius: 16,
-                        background: bubbleColor,
-                        border: `1px solid ${borderColor}`,
-                        lineHeight: 1.6,
-                        fontSize: 14,
-                        color: "rgba(233,255,208,0.9)",
-                        boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
-                        whiteSpace: "pre-wrap",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                        alignItems: isUser ? "flex-end" : "flex-start",
                       }}
                     >
-                      {msg.content || "…"}
+                      {shouldShowLabel && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            letterSpacing: 0.4,
+                            color: "rgba(233,255,208,0.65)",
+                          }}
+                        >
+                          {label}
+                          {typingHint}
+                        </span>
+                      )}
+                      <div
+                        style={{
+                          maxWidth: "85%",
+                          padding: "16px 18px",
+                          borderRadius: 18,
+                          background: bubbleColor,
+                          border: `1px solid ${borderColor}`,
+                          lineHeight: 1.6,
+                          fontSize: 14,
+                          color: "rgba(233,255,208,0.92)",
+                          boxShadow: "0 18px 40px rgba(0,0,0,0.32)",
+                          backdropFilter: "blur(3px)",
+                          WebkitBackdropFilter: "blur(3px)",
+                        }}
+                      >
+                        {isUser ? (
+                          <span style={{ whiteSpace: "pre-wrap" }}>
+                            {msg.content || "…"}
+                          </span>
+                        ) : (
+                          <div className="chat-markdown">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content || "…"}
+                            </ReactMarkdown>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
+                  );
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+              <div className="chat-scroll-fade chat-scroll-fade--top" />
+              <div className="chat-scroll-fade chat-scroll-fade--bottom" />
             </div>
           </div>
         ) : (
