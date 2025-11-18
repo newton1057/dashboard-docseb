@@ -14,6 +14,21 @@ const SESSION_CHARSET =
 const TYPING_STEP = 2;
 const TYPING_INTERVAL = 35;
 
+const toDataPayload = (value) => {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return null;
+  }
+
+  const normalized = Object.entries(value).reduce((acc, [key, val]) => {
+    if (val !== undefined) {
+      acc[key] = val;
+    }
+    return acc;
+  }, {});
+
+  return Object.keys(normalized).length > 0 ? normalized : null;
+};
+
 const generateSessionId = () => {
   let id = "";
   for (let i = 0; i < SESSION_ID_LENGTH; i += 1) {
@@ -66,7 +81,7 @@ const getLastAssistantIndex = (items) => {
   return -1;
 };
 
-export default function ChatMain({ palette }) {
+export default function ChatMain({ palette, contextData = null }) {
   const [messages, setMessages] = useState([]);
   const [inputValue, setInputValue] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -160,13 +175,17 @@ export default function ChatMain({ palette }) {
     let isAnimatingResponse = false;
 
     try {
+      const dataPayload = toDataPayload(contextData);
+      const payload = {
+        message: userContent,
+        session_id: sessionId,
+        ...(dataPayload ? { data: dataPayload } : {}),
+      };
+
       const response = await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: userContent,
-          session_id: sessionId,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {

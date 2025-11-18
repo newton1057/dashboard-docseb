@@ -683,6 +683,12 @@ export default function DashboardMain({ palette }) {
           : "Chat IA")
     : null;
   const chatPatientEmail = normalizedEmail && normalizedEmail !== "—" ? normalizedEmail : null;
+  const chatContextData = chatPatientRow
+    ? {
+        ...(chatPatientEmail ? { email: chatPatientEmail } : {}),
+        info: chatPatientRow,
+      }
+    : null;
 
   const closeFormDetailModal = () => setFormDetailModal(null);
 
@@ -1452,7 +1458,7 @@ export default function DashboardMain({ palette }) {
               </button>
             </div>
             <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-              <ChatMain palette={palette} />
+              <ChatMain palette={palette} contextData={chatContextData} />
             </div>
           </div>
         </div>
