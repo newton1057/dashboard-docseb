@@ -1,6 +1,6 @@
 // src/pages/Chat.jsx
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -81,11 +81,30 @@ const getLastAssistantIndex = (items) => {
   return -1;
 };
 
-export default function ChatMain({ palette, contextData = null }) {
-  const [messages, setMessages] = useState([]);
+const normalizeEmail = (value) => {
+  if (typeof value !== "string") return null;
+  const trimmed = value.trim();
+  return trimmed && trimmed !== "—" ? trimmed : null;
+};
+
+export default function ChatMain({
+  palette,
+  contextData = null,
+  sessionIdOverride = null,
+  initialHistory = null,
+  requestType = null,
+  requestEmail = null,
+}) {
+  const initialMessages = useMemo(
+    () => buildMessagesFromHistory(initialHistory),
+    [initialHistory]
+  );
+  const [messages, setMessages] = useState(initialMessages);
   const [inputValue, setInputValue] = useState("");
   const [isThinking, setIsThinking] = useState(false);
-  const [sessionId] = useState(() => generateSessionId());
+  const [sessionId, setSessionId] = useState(() =>
+    sessionIdOverride || generateSessionId()
+  );
   const typingIntervalRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -100,6 +119,19 @@ export default function ChatMain({ palette, contextData = null }) {
       typingIntervalRef.current = null;
     }
   };
+
+  useEffect(() => {
+    setMessages(initialMessages);
+    setIsThinking(false);
+    clearTypingInterval();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialMessages]);
+
+  useEffect(() => {
+    if (sessionIdOverride && sessionIdOverride !== sessionId) {
+      setSessionId(sessionIdOverride);
+    }
+  }, [sessionIdOverride, sessionId]);
 
   const updateScrollFades = () => {
     const el = scrollAreaRef.current;
@@ -176,9 +208,20 @@ export default function ChatMain({ palette, contextData = null }) {
 
     try {
       const dataPayload = toDataPayload(contextData);
+      const normalizedType =
+        typeof requestType === "string" ? requestType.trim() : "";
+      const typeValue = normalizedType || null;
+      const normalizedSpecificEmail =
+        typeValue === "specific"
+          ? normalizeEmail(requestEmail) ||
+            normalizeEmail(contextData?.email) ||
+            normalizeEmail(contextData?.info?.email)
+          : null;
       const payload = {
         message: userContent,
         session_id: sessionId,
+        ...(typeValue ? { type: typeValue } : {}),
+        ...(typeValue === "specific" ? { email: normalizedSpecificEmail } : {}),
         ...(dataPayload ? { data: dataPayload } : {}),
       };
 

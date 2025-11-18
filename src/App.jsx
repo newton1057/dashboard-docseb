@@ -1,33 +1,46 @@
 // src/App.jsx
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import Dashboard from "./pages/dashboard";
 import Login from "./pages/login";
 import "./App.css";
+import { isSessionValid } from "./utils/auth";
 
-// Puedes dejar Home aquí mismo
-function Home() {
-  return (
-    <div style={{ padding: 24 }}>
-      <h1>🏠 Home</h1>
-      <p>Selecciona una ruta:</p>
-      <nav>
-        <ul>
-          <li><Link to="/dashboard">Ir a /dashboard</Link></li>
-          <li><Link to="/login">Ir a /login</Link></li>
-        </ul>
-      </nav>
-    </div>
-  );
+function ProtectedRoute({ children }) {
+  if (!isSessionValid()) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
+function PublicRoute({ children }) {
+  if (isSessionValid()) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return children;
 }
 
 export default function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="*" element={<div style={{ padding: 24 }}><h1>404</h1><p>Página no encontrada</p></div>} />
+        <Route
+          path="/login"
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );

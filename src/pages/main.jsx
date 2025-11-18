@@ -1,5 +1,5 @@
 // src/components/DashboardMain.jsx
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { computeIkdcScore } from "../utils/ikdcScore";
 import { lysholmQuestions, tegnerQuestion } from "../data/lysholmTegner";
 import { computeLysholmScore, interpretLysholm, findTegnerLabel } from "../utils/lysholmTegner";
@@ -173,6 +173,8 @@ const ROUTES = {
 };
 
 const RECORDS_ENDPOINT = "https://get-forms-229745866329.northamerica-south1.run.app";
+const CONVERSATION_ENDPOINT =
+  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversation";
 
 const TABLE_COLUMNS = [
   { key: "email", label: "Email" },
@@ -360,6 +362,40 @@ const buildKoosDetails = (entry) => {
   return { questionAnswers, scores };
 };
 
+const normalizeEmailForConversation = (value) => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  return trimmed && trimmed !== "—" ? trimmed : "";
+};
+
+const requestSpecificConversationByEmail = async (
+  email,
+  { signal } = {},
+) => {
+  const normalizedEmail = normalizeEmailForConversation(email);
+  if (!normalizedEmail) {
+    const error = new Error("EMAIL_REQUIRED");
+    error.code = "EMAIL_REQUIRED";
+    throw error;
+  }
+
+  const response = await fetch(CONVERSATION_ENDPOINT, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      type: "specific",
+      email: normalizedEmail,
+    }),
+    signal,
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
+  }
+
+  return response.json();
+};
+
 // Iconos
 function EyeIcon({ size = 18, color = "currentColor" }) {
   return (
@@ -403,6 +439,11 @@ export default function DashboardMain({ palette }) {
   const [historicalModal, setHistoricalModal] = useState(null);
   const [openRowMenu, setOpenRowMenu] = useState(null);
   const [chatModal, setChatModal] = useState(null);
+  const [chatConversationHistory, setChatConversationHistory] = useState(null);
+  const [chatConversationSessionId, setChatConversationSessionId] = useState(null);
+  const [isChatConversationLoading, setIsChatConversationLoading] = useState(false);
+  const [chatConversationError, setChatConversationError] = useState(null);
+  const chatConversationAbortRef = useRef(null);
 
   useEffect(() => {
     let active = true;
@@ -466,6 +507,13 @@ export default function DashboardMain({ palette }) {
       win.removeEventListener("scroll", handleCloseOnMove, true);
     };
   }, [openRowMenu]);
+
+  useEffect(
+    () => () => {
+      chatConversationAbortRef.current?.abort();
+    },
+    [],
+  );
 
   const toggleOption = (name) => {
     setCopyState("idle");
@@ -537,10 +585,54 @@ export default function DashboardMain({ palette }) {
     });
   };
 
+  const loadChatConversationForRow = (row) => {
+    if (!row) return;
+    chatConversationAbortRef.current?.abort();
+    const controller = new AbortController();
+    chatConversationAbortRef.current = controller;
+
+    setIsChatConversationLoading(true);
+    setChatConversationError(null);
+    setChatConversationHistory(null);
+    setChatConversationSessionId(null);
+
+    requestSpecificConversationByEmail(row.email, { signal: controller.signal })
+      .then((data) => {
+        if (controller.signal.aborted) return;
+        const history = Array.isArray(data?.conversationHistory)
+          ? data.conversationHistory
+          : [];
+        setChatConversationHistory(history);
+        const resolvedSessionId =
+          data?.session_id || normalizeEmailForConversation(row.email) || null;
+        setChatConversationSessionId(resolvedSessionId);
+      })
+      .catch((error) => {
+        if (controller.signal.aborted) return;
+        if (error?.code === "EMAIL_REQUIRED") {
+          setChatConversationError("El registro no tiene un correo válido.");
+        } else {
+          console.error("No se pudo obtener la conversación específica:", error);
+          setChatConversationError("No se pudo cargar la conversación.");
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setIsChatConversationLoading(false);
+        }
+      });
+  };
+
+  const openChatModalForRow = (row) => {
+    if (!row) return;
+    setChatModal({ row });
+    loadChatConversationForRow(row);
+  };
+
   const handleRowMenuAction = (action) => {
     if (!openRowMenu?.rowData) return;
     if (action === "chat") {
-      setChatModal({ row: openRowMenu.rowData });
+      openChatModalForRow(openRowMenu.rowData);
     }
     setOpenRowMenu(null);
   };
@@ -573,6 +665,14 @@ export default function DashboardMain({ palette }) {
     : null;
 
   const openFormDetailModal = (formName, row) => {
+    if (row) {
+      requestSpecificConversationByEmail(row.email).catch((error) => {
+        if (error?.code !== "EMAIL_REQUIRED") {
+          console.error("No se pudo sincronizar la conversación específica:", error);
+        }
+      });
+    }
+
     const entries = row.formDetails?.[formName] ?? [];
     const primaryEntry = entries[0] ?? null;
     let questionAnswers = null;
@@ -669,7 +769,14 @@ export default function DashboardMain({ palette }) {
     });
   };
 
-  const closeChatModal = () => setChatModal(null);
+  const closeChatModal = () => {
+    chatConversationAbortRef.current?.abort();
+    setChatModal(null);
+    setChatConversationHistory(null);
+    setChatConversationSessionId(null);
+    setChatConversationError(null);
+    setIsChatConversationLoading(false);
+  };
 
   const chatPatientRow = chatModal?.row ?? null;
   const normalizeText = (value) => (typeof value === "string" ? value.trim() : "");
@@ -1457,8 +1564,38 @@ export default function DashboardMain({ palette }) {
                 ✕
               </button>
             </div>
-            <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
-              <ChatMain palette={palette} contextData={chatContextData} />
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                display: "flex",
+                flexDirection: "column",
+                overflow: "hidden",
+              }}
+            >
+              {(isChatConversationLoading || chatConversationError) && (
+                <div
+                  style={{
+                    padding: "10px 14px",
+                    fontSize: 13,
+                    color: chatConversationError ? palette.danger : palette.textMuted,
+                  }}
+                >
+                  {isChatConversationLoading
+                    ? "Cargando conversación..."
+                    : chatConversationError}
+                </div>
+              )}
+              <div style={{ flex: 1, minHeight: 0 }}>
+                <ChatMain
+                  palette={palette}
+                  contextData={chatContextData}
+                  requestType="specific"
+                  requestEmail={chatPatientEmail}
+                  initialHistory={chatConversationHistory}
+                  sessionIdOverride={chatConversationSessionId || undefined}
+                />
+              </div>
             </div>
           </div>
         </div>

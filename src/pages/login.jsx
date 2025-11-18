@@ -1,6 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButterflyIcon } from "../utils/icons";
+import { isSessionValid, markSessionStart } from "../utils/auth";
 
 const PIN_LENGTH = 6;
 const VALID_PIN = "123456";
@@ -11,6 +12,11 @@ export default function Login() {
   const [errorMsg, setErrorMsg] = useState("");
   const refs = useRef([...Array(PIN_LENGTH)].map(() => null));
   const navigate = useNavigate();
+  useEffect(() => {
+    if (isSessionValid()) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [navigate, isSessionValid]);
 
   const pin = digits.join("");
   const isValid = pin.length === PIN_LENGTH;
@@ -65,6 +71,7 @@ export default function Login() {
     if (!isValid) return;
 
     if (pin === VALID_PIN) {
+      markSessionStart();
       navigate("/dashboard");
     } else {
       setErrorMsg("PIN incorrecto. Inténtalo de nuevo.");
