@@ -105,8 +105,10 @@ export default function ChatMain({
   const [sessionId, setSessionId] = useState(() =>
     sessionIdOverride || generateSessionId()
   );
+  const [inputContainerHeight, setInputContainerHeight] = useState(0);
   const typingIntervalRef = useRef(null);
   const messagesEndRef = useRef(null);
+  const inputContainerRef = useRef(null);
 
   // Fade dinámico
   const scrollAreaRef = useRef(null);
@@ -132,6 +134,23 @@ export default function ChatMain({
       setSessionId(sessionIdOverride);
     }
   }, [sessionIdOverride, sessionId]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (inputContainerRef.current) {
+        setInputContainerHeight(inputContainerRef.current.offsetHeight);
+      }
+    };
+
+    handleResize();
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", handleResize);
+      return () => window.removeEventListener("resize", handleResize);
+    }
+
+    return undefined;
+  }, []);
 
   const updateScrollFades = () => {
     const el = scrollAreaRef.current;
@@ -330,6 +349,15 @@ export default function ChatMain({
   };
 
   const hasMessages = messages.length > 0;
+  const inputOverlapOffset = hasMessages
+    ? Math.max(inputContainerHeight - 24, 120)
+    : 0;
+  const chatBottomPadding = hasMessages
+    ? inputOverlapOffset + 32
+    : 72;
+  const inputContainerMargin = hasMessages
+    ? `-${inputOverlapOffset}px auto 0`
+    : "0 auto";
 
   const quickPrompts = [
     {
@@ -359,6 +387,10 @@ export default function ChatMain({
         justifyContent: "space-between",
         gap: 32,
         padding: "32px clamp(24px, 5vw, 80px) 48px",
+        height: "100%",
+        minHeight: 0,
+        flex: 1,
+        boxSizing: "border-box",
         background:
           "radial-gradient(1200px 800px at 20% -120%, rgba(210,242,82,0.18), transparent 65%), linear-gradient(180deg, rgba(3,23,24,0.85) 0%, rgba(3,23,24,0.65) 100%)",
         borderTop: `1px solid ${palette.border}`,
@@ -384,6 +416,7 @@ export default function ChatMain({
           position: "relative",
           zIndex: 1,
           flex: 1,
+          minHeight: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: hasMessages ? "stretch" : "center",
@@ -404,6 +437,8 @@ export default function ChatMain({
               gap: 24,
               padding: "12px 8px 0",
               overflow: "hidden",
+              flex: 1,
+              minHeight: 0,
             }}
           >
             <div
@@ -411,6 +446,10 @@ export default function ChatMain({
               style={{
                 position: "relative",
                 paddingRight: 8,
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                minHeight: 0,
               }}
             >
               <div
@@ -420,12 +459,13 @@ export default function ChatMain({
                   display: "flex",
                   flexDirection: "column",
                   gap: 18,
-                  maxHeight: "60vh",
+                  flex: 1,
+                  minHeight: 0,
                   overflowY: "auto",
                   paddingRight: 48,
                   paddingLeft: 48,      // 👈 nuevo: aire lateral
                   paddingTop: 4,
-                  paddingBottom: 72,   // sigue evitando que el fade tape el bottom
+                  paddingBottom: chatBottomPadding,   // espacio extra para el input flotante
                 }}
                 onScroll={handleScroll}
               >
@@ -586,12 +626,13 @@ export default function ChatMain({
       </main>
 
       <div
+        ref={inputContainerRef}
         style={{
           position: "relative",
-          zIndex: 1,
+          zIndex: 5,
           width: "100%",
           maxWidth: 880,
-          margin: "0 auto",
+          margin: inputContainerMargin,
           display: "flex",
           flexDirection: "column",
           gap: 0,
