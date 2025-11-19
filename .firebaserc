@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "aurora-4e980"
-  }
+    "default": "docseb"
+  },
+  "targets": {},
+  "etags": {}
 }
