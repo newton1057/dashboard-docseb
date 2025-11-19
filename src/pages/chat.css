@@ -19,22 +19,25 @@
   right: 8px;
   height: 36px;
   z-index: 2;
+  display: none;
 }
 
 .chat-scroll-fade--top {
   top: 0;
   background: linear-gradient(
     180deg,
-    rgba(3, 23, 24, 0.9) 0%,
-    rgba(3, 23, 24, 0) 100%
+    rgba(3, 23, 24, 0) 0%,
+    rgba(3, 23, 24, 0.85) 90%,
+    rgba(3, 23, 24, 0.95) 100%
   );
 }
 
 .chat-scroll-fade--bottom {
   bottom: 0;
   background: linear-gradient(
-    0deg,
-    rgba(3, 23, 24, 0.95) 0%,
+    180deg,
+    rgba(3, 23, 24, 0.9) 0%,
+    rgba(3, 23, 24, 0.2) 70%,
     rgba(3, 23, 24, 0) 100%
   );
 }

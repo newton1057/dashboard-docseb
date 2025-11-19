@@ -1586,7 +1586,13 @@ export default function DashboardMain({ palette }) {
                     : chatConversationError}
                 </div>
               )}
-              <div style={{ flex: 1, minHeight: 0 }}>
+              <div
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: "auto",
+                }}
+              >
                 <ChatMain
                   palette={palette}
                   contextData={chatContextData}

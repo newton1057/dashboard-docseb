@@ -642,7 +642,7 @@ export default function ChatMain({
           style={{
             borderRadius: 28,
             border: `1px solid ${palette.border}`,
-            background: "rgba(2,10,11,0.98)",
+            background: palette.bg2 || "#0B2A2B",
             boxShadow:
               "0 15px 35px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
             padding: "18px 22px",

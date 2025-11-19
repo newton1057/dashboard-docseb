@@ -1,5 +1,5 @@
 // src/pages/Dashboard.jsx
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ButterflyIcon } from "../utils/icons";
 import DashboardMain from "./main";
@@ -22,6 +22,10 @@ const CONVERSATIONS_ENDPOINT =
   "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversations";
 const CONVERSATION_DETAIL_ENDPOINT =
   "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversation";
+const DELETE_CONVERSATION_ENDPOINT =
+  "https://delete-chat-229745866329.northamerica-south1.run.app";
+const LOOKER_EMBED_URL =
+  "https://lookerstudio.google.com/embed/reporting/1a6767f6-18d9-48e7-a247-2e9131b7378a/page/9F1bF";
 
 const extractTextFromParts = (parts) => {
   if (!Array.isArray(parts)) {
@@ -72,6 +76,28 @@ const truncateText = (text, maxLength = 80) => {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 };
 
+const getConversationType = (conversation) => {
+  const rawType =
+    typeof conversation?.type === "string" ? conversation.type.trim().toLowerCase() : "";
+  if (rawType === "general" || rawType === "specific") {
+    return rawType;
+  }
+
+  const sessionId = typeof conversation?.session_id === "string" ? conversation.session_id : "";
+  if (sessionId.includes("@")) {
+    return "specific";
+  }
+  return "general";
+};
+
+const shouldShowConversationSessionId = (conversation) => {
+  if (!conversation) return false;
+  if (getConversationType(conversation) === "general") return false;
+  const sessionId =
+    typeof conversation.session_id === "string" ? conversation.session_id.trim() : "";
+  return Boolean(sessionId);
+};
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,6 +108,10 @@ export default function Dashboard() {
   const [selectedSessionId, setSelectedSessionId] = useState(null);
   const [selectedConversationHistory, setSelectedConversationHistory] =
     useState(null);
+  const [chatInstanceKey, setChatInstanceKey] = useState(0);
+  const [hoveredConversationId, setHoveredConversationId] = useState(null);
+  const [openConversationOptionsId, setOpenConversationOptionsId] = useState(null);
+  const [deletingConversationId, setDeletingConversationId] = useState(null);
   const [isConversationDetailLoading, setIsConversationDetailLoading] =
     useState(false);
   const [conversationDetailError, setConversationDetailError] = useState(null);
@@ -126,7 +156,7 @@ export default function Dashboard() {
     []
   );
 
-  useEffect(() => {
+  const loadConversations = useCallback(() => {
     conversationAbortControllerRef.current?.abort();
     const controller = new AbortController();
     conversationAbortControllerRef.current = controller;
@@ -162,11 +192,39 @@ export default function Dashboard() {
     }
 
     fetchConversations();
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
 
     return () => {
-      controller.abort();
+      conversationAbortControllerRef.current?.abort();
     };
-  }, []);
+  }, [loadConversations]);
+
+  useEffect(() => {
+    setHoveredConversationId(null);
+    setOpenConversationOptionsId(null);
+  }, [conversations]);
+
+  useEffect(() => {
+    if (!openConversationOptionsId) return undefined;
+
+    const handleOutsideClick = (event) => {
+      const target = event.target;
+      if (target instanceof Element) {
+        if (target.closest('[data-conversation-options="true"]')) {
+          return;
+        }
+      }
+      setOpenConversationOptionsId(null);
+    };
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, [openConversationOptionsId]);
 
   const handleLogout = () => {
     setIsMenuOpen(false);
@@ -219,6 +277,115 @@ export default function Dashboard() {
       });
   };
 
+  const resetChatView = () => {
+    conversationDetailAbortRef.current?.abort();
+    conversationDetailAbortRef.current = null;
+    setSelectedSessionId(null);
+    setSelectedConversationHistory(null);
+    setConversationDetailError(null);
+    setIsConversationDetailLoading(false);
+    setChatInstanceKey((value) => value + 1);
+  };
+
+  const handleDeleteConversation = async (sessionId) => {
+    if (!sessionId || deletingConversationId) return;
+
+    setConversationsError(null);
+    setDeletingConversationId(sessionId);
+
+    try {
+      const url = new URL(DELETE_CONVERSATION_ENDPOINT);
+      url.searchParams.set("session_id", sessionId);
+      const response = await fetch(url.toString());
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
+
+      if (selectedSessionId === sessionId) {
+        resetChatView();
+      }
+
+      setOpenConversationOptionsId(null);
+      loadConversations();
+    } catch (error) {
+      console.error("No se pudo eliminar la conversación:", error);
+      setConversationsError("No se pudo borrar el chat seleccionado.");
+    } finally {
+      setDeletingConversationId((value) => (value === sessionId ? null : value));
+    }
+  };
+
+  const handleSidebarSectionClick = (sectionKey) => {
+    if (sectionKey === "chat") {
+      setActiveSection("chat");
+      resetChatView();
+      return;
+    }
+    setActiveSection(sectionKey);
+  };
+
+  const renderMainContent = () => {
+    if (activeSection === "dashboard") {
+      return (
+        <div
+          style={{
+            height: "100%",
+            borderTop: `1px solid ${palette.border}`,
+            borderLeft: `1px solid ${palette.border}`,
+            background:
+              "radial-gradient(1200px 800px at 20% -120%, rgba(210,242,82,0.18), transparent 65%), linear-gradient(180deg, rgba(3,23,24,0.85) 0%, rgba(3,23,24,0.65) 100%)",
+            display: "flex",
+            flexDirection: "column",
+            padding: "32px clamp(24px, 4vw, 64px)",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              flex: 1,
+              width: "100%",
+              borderRadius: 24,
+              overflow: "hidden",
+              border: `1px solid ${palette.border}`,
+              boxShadow: "0 25px 60px rgba(0,0,0,0.55)",
+              background: "rgba(2,10,11,0.92)",
+              display: "flex",
+            }}
+          >
+            <iframe
+              title="Dashboard Looker Studio"
+              src={LOOKER_EMBED_URL}
+              allowFullScreen
+              style={{
+                flex: 1,
+                width: "100%",
+                height: "100%",
+                minHeight: 620,
+                border: "none",
+                display: "block",
+              }}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    if (activeSection === "formularios") {
+      return <DashboardMain palette={palette} />;
+    }
+
+    return (
+      <ChatMain
+        key={selectedSessionId || `new-${chatInstanceKey}`}
+        palette={palette}
+        sessionIdOverride={selectedSessionId}
+        initialHistory={selectedConversationHistory}
+        requestType="general"
+      />
+    );
+  };
+
   return (
     <div className="full-screen-dashboard">
       <div
@@ -226,7 +393,7 @@ export default function Dashboard() {
           width: "100vw",
           height: "100dvh",
           display: "grid",
-          gridTemplateColumns: "260px 1fr",
+          gridTemplateColumns: "16% 1fr",
           background:
             "radial-gradient(1200px 600px at 120% -20%, rgba(210,242,82,0.10) 0%, transparent 60%), linear-gradient(135deg, #031718, #0B2A2B 60%)",
           color: palette.text,
@@ -278,6 +445,7 @@ export default function Dashboard() {
               General
             </div>
             {[
+              { key: "dashboard", label: "Dashboard" },
               { key: "formularios", label: "Formularios" },
               { key: "chat", label: "Chat" },
             ].map((item) => {
@@ -286,7 +454,7 @@ export default function Dashboard() {
                 <button
                   key={item.key}
                   type="button"
-                  onClick={() => setActiveSection(item.key)}
+                  onClick={() => handleSidebarSectionClick(item.key)}
                   aria-current={isActive ? "page" : undefined}
                   style={{
                     display: "flex",
@@ -394,7 +562,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-              {conversations.map((conversation) => {
+              {conversations.map((conversation, index) => {
                 const preview = getConversationPreview(
                   conversation?.conversationHistory
                 );
@@ -405,64 +573,193 @@ export default function Dashboard() {
                 const isDisabled = !conversation?.session_id;
                 const isLoadingCurrent =
                   isConversationDetailLoading && isSelected;
+                const showSessionId =
+                  shouldShowConversationSessionId(conversation);
+                const sessionIdValue =
+                  typeof conversation?.session_id === "string"
+                    ? conversation.session_id.trim()
+                    : "";
+                const conversationKey =
+                  sessionIdValue || `conversation-${index}`;
+                const isHovered = hoveredConversationId === conversationKey;
+                const isMenuOpen = openConversationOptionsId === conversationKey;
+                const showOptionsButton = isHovered || isMenuOpen;
+                const sessionIdLabel = showSessionId
+                  ? sessionIdValue || "ID desconocido"
+                  : null;
+                const isDeletingConversation =
+                  deletingConversationId === sessionIdValue;
+                const canDeleteConversation = Boolean(sessionIdValue);
                 return (
-                  <button
-                    key={conversation?.session_id}
-                    type="button"
-                    onClick={() =>
-                      handleConversationClick(conversation?.session_id)
-                    }
-                    disabled={isDisabled}
-                    style={{
-                      padding: "12px 14px",
-                      borderRadius: 14,
-                      background: isSelected
-                        ? "rgba(210,242,82,0.08)"
-                        : "rgba(3,23,24,0.85)",
-                      border: `1px solid ${
-                        isSelected ? palette.accent : palette.border
-                      }`,
-                      boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 6,
-                      textAlign: "left",
-                      cursor: isDisabled ? "default" : "pointer",
-                      opacity: isLoadingCurrent ? 0.65 : 1,
-                      transition: "background 0.2s ease, border 0.2s ease",
-                      font: "inherit",
-                      color: "inherit",
-                    }}
+                  <div
+                    key={conversationKey}
+                    onMouseEnter={() => setHoveredConversationId(conversationKey)}
+                    onMouseLeave={() => setHoveredConversationId(null)}
+                    style={{ position: "relative", width: "100%" }}
                   >
-                    <div
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleConversationClick(conversation?.session_id)
+                      }
+                      disabled={isDisabled}
                       style={{
-                        fontSize: 12,
-                        letterSpacing: 0.5,
-                        color: "rgba(233,255,208,0.7)",
+                        padding: "12px 14px",
+                        borderRadius: 14,
+                        background: isSelected
+                          ? "rgba(210,242,82,0.08)"
+                          : "rgba(3,23,24,0.85)",
+                        border: `1px solid ${
+                          isSelected ? palette.accent : palette.border
+                        }`,
+                        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 6,
+                        textAlign: "left",
+                        cursor: isDisabled ? "default" : "pointer",
+                        opacity: isLoadingCurrent ? 0.65 : 1,
+                        transition: "background 0.2s ease, border 0.2s ease",
+                        font: "inherit",
+                        color: "inherit",
+                        width: "100%",
                       }}
                     >
-                      {conversation?.session_id || "ID desconocido"}
-                    </div>
+                      {showSessionId && (
+                        <div
+                          style={{
+                            fontSize: 12,
+                            letterSpacing: 0.5,
+                            color: "rgba(233,255,208,0.7)",
+                          }}
+                        >
+                          {sessionIdLabel}
+                        </div>
+                      )}
+                      <div
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 600,
+                          color: palette.text,
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {title}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 12,
+                          color: "rgba(233,255,208,0.7)",
+                          lineHeight: 1.4,
+                        }}
+                      >
+                        {subtitle}
+                      </div>
+                    </button>
                     <div
+                      data-conversation-options="true"
                       style={{
-                        fontSize: 14,
-                        fontWeight: 600,
-                        color: palette.text,
-                        lineHeight: 1.4,
+                        position: "absolute",
+                        top: 6,
+                        right: 8,
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "flex-end",
+                        gap: 6,
+                        pointerEvents: showOptionsButton ? "auto" : "none",
+                        zIndex: 2,
                       }}
                     >
-                      {title}
+                      <button
+                        type="button"
+                        aria-label="Opciones del chat"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          event.preventDefault();
+                          setOpenConversationOptionsId((value) =>
+                            value === conversationKey ? null : conversationKey
+                          );
+                        }}
+                        tabIndex={showOptionsButton ? 0 : -1}
+                        style={{
+                          width: 28,
+                          height: 28,
+                          padding: 0,
+                          borderRadius: "50%",
+                          border: `1px solid ${palette.border}`,
+                          background: palette.bg1,
+                          color: palette.text,
+                          fontSize: 16,
+                          fontWeight: 700,
+                          lineHeight: 1,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          opacity: showOptionsButton ? 1 : 0,
+                          transform: showOptionsButton
+                            ? "translateY(0)"
+                            : "translateY(-4px)",
+                          transition: "opacity 0.2s ease, transform 0.2s ease",
+                          boxShadow: "0 8px 18px rgba(0,0,0,0.35)",
+                        }}
+                      >
+                        ⋮
+                      </button>
+                      {isMenuOpen && (
+                        <div
+                          style={{
+                            minWidth: 140,
+                            padding: 6,
+                            borderRadius: 12,
+                            background: palette.surface,
+                            border: `1px solid ${palette.border}`,
+                            boxShadow: "0 18px 40px rgba(0,0,0,0.45)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 4,
+                          }}
+                        >
+                          <button
+                            type="button"
+                            disabled={
+                              !canDeleteConversation || isDeletingConversation
+                            }
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              event.preventDefault();
+                              if (!canDeleteConversation || isDeletingConversation) {
+                                return;
+                              }
+                              handleDeleteConversation(sessionIdValue);
+                            }}
+                            style={{
+                              width: "100%",
+                              border: "none",
+                              borderRadius: 8,
+                              padding: "8px 10px",
+                              background: "transparent",
+                              color: palette.text,
+                              fontSize: 13,
+                              fontWeight: 600,
+                              textAlign: "left",
+                              cursor:
+                                !canDeleteConversation || isDeletingConversation
+                                  ? "not-allowed"
+                                  : "pointer",
+                              opacity:
+                                !canDeleteConversation || isDeletingConversation
+                                  ? 0.6
+                                  : 1,
+                              transition: "background 0.2s ease, color 0.2s ease, opacity 0.2s ease",
+                            }}
+                          >
+                            {isDeletingConversation ? "Borrando..." : "Borrar chat"}
+                          </button>
+                        </div>
+                      )}
                     </div>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: "rgba(233,255,208,0.7)",
-                        lineHeight: 1.4,
-                      }}
-                    >
-                      {subtitle}
-                    </div>
-                  </button>
+                  </div>
                 );
               })}
 
@@ -528,7 +825,7 @@ export default function Dashboard() {
                 aria-expanded={isMenuOpen}
               >
                 <img
-                  src="https://images.unsplash.com/photo-1525130413817-d45c1d127c42?auto=format&fit=crop&w=200&h=200&q=80"
+                  src="https://firebasestorage.googleapis.com/v0/b/docseb.firebasestorage.app/o/icons%2Flogo.jpg?alt=media&token=e8a6b9c3-8a0b-4dd6-82ee-7a1eb7fd946e"
                   alt="Perfil demo"
                   style={{
                     width: "100%",
@@ -577,16 +874,7 @@ export default function Dashboard() {
           </header>
 
           {/* Contenido movido a su propio componente */}
-          {activeSection === "formularios" ? (
-            <DashboardMain palette={palette} />
-          ) : (
-            <ChatMain
-              palette={palette}
-              sessionIdOverride={selectedSessionId}
-              initialHistory={selectedConversationHistory}
-              requestType="general"
-            />
-          )}
+          {renderMainContent()}
         </div>
       </div>
     </div>
