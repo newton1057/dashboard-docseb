@@ -4,7 +4,7 @@ import { ButterflyIcon } from "../utils/icons";
 import { isSessionValid, markSessionStart } from "../utils/auth";
 
 const PIN_LENGTH = 6;
-const VALID_PIN = "123456";
+const VALID_PIN = "482931";
 
 export default function Login() {
   const [digits, setDigits] = useState(Array(PIN_LENGTH).fill(""));
@@ -158,9 +158,8 @@ export default function Login() {
                   width: "clamp(40px, 8.5vw, 56px)",
                   background: "transparent",
                   border: "none",
-                  borderBottom: `3px solid ${
-                    error ? "#ff6b6b" : "rgba(210, 242, 82, 0.6)"
-                  }`,
+                  borderBottom: `3px solid ${error ? "#ff6b6b" : "rgba(210, 242, 82, 0.6)"
+                    }`,
                   outline: "none",
                   height: 48,
                   fontSize: 28,
