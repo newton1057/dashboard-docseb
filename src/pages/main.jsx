@@ -18,6 +18,7 @@ import { computeIksScores, pointsFromFlexion, deductionFromFlexionContracture, d
 import { KOOS_QUESTIONS, KOOS_SECTIONS } from "../data/koos";
 import { computeKoosScores } from "../utils/koosScore";
 import ChatMain from "./chat";
+import Skeleton from "../components/Skeleton";
 
 const FORM_FIELD_MAP = {
   IKDC: "ikdc",
@@ -639,29 +640,29 @@ export default function DashboardMain({ palette }) {
 
   const rowMenuPosition = openRowMenu
     ? (() => {
-        const width = 160;
-        const gutter = 12;
-        const viewportWidth =
-          openRowMenu.viewport?.width ??
-          (typeof window !== "undefined" ? window.innerWidth : 0);
-        const viewportHeight =
-          openRowMenu.viewport?.height ??
-          (typeof window !== "undefined" ? window.innerHeight : 0);
-        const safeViewportWidth = viewportWidth || width + gutter * 2;
-        const safeViewportHeight =
-          viewportHeight || openRowMenu.anchorRect.bottom + 8 + 60;
-        const desiredLeft = openRowMenu.anchorRect.right - width;
-        const left = Math.max(
-          gutter,
-          Math.min(safeViewportWidth - gutter - width, desiredLeft),
-        );
-        const desiredTop = openRowMenu.anchorRect.bottom + 8;
-        const top = Math.max(
-          gutter,
-          Math.min(safeViewportHeight - gutter - 10, desiredTop),
-        );
-        return { left, top, width };
-      })()
+      const width = 160;
+      const gutter = 12;
+      const viewportWidth =
+        openRowMenu.viewport?.width ??
+        (typeof window !== "undefined" ? window.innerWidth : 0);
+      const viewportHeight =
+        openRowMenu.viewport?.height ??
+        (typeof window !== "undefined" ? window.innerHeight : 0);
+      const safeViewportWidth = viewportWidth || width + gutter * 2;
+      const safeViewportHeight =
+        viewportHeight || openRowMenu.anchorRect.bottom + 8 + 60;
+      const desiredLeft = openRowMenu.anchorRect.right - width;
+      const left = Math.max(
+        gutter,
+        Math.min(safeViewportWidth - gutter - width, desiredLeft),
+      );
+      const desiredTop = openRowMenu.anchorRect.bottom + 8;
+      const top = Math.max(
+        gutter,
+        Math.min(safeViewportHeight - gutter - 10, desiredTop),
+      );
+      return { left, top, width };
+    })()
     : null;
 
   const openFormDetailModal = (formName, row) => {
@@ -784,17 +785,17 @@ export default function DashboardMain({ palette }) {
   const normalizedEmail = normalizeText(chatPatientRow?.email);
   const chatPatientName = chatPatientRow
     ? (normalizedName && normalizedName !== "—"
-        ? normalizedName
-        : normalizedEmail && normalizedEmail !== "—"
-          ? normalizedEmail
-          : "Chat IA")
+      ? normalizedName
+      : normalizedEmail && normalizedEmail !== "—"
+        ? normalizedEmail
+        : "Chat IA")
     : null;
   const chatPatientEmail = normalizedEmail && normalizedEmail !== "—" ? normalizedEmail : null;
   const chatContextData = chatPatientRow
     ? {
-        ...(chatPatientEmail ? { email: chatPatientEmail } : {}),
-        info: chatPatientRow,
-      }
+      ...(chatPatientEmail ? { email: chatPatientEmail } : {}),
+      info: chatPatientRow,
+    }
     : null;
 
   const closeFormDetailModal = () => setFormDetailModal(null);
@@ -1129,16 +1130,16 @@ export default function DashboardMain({ palette }) {
             </thead>
 
             <tbody>
-              {loading && (
-                <tr>
-                  <td
-                    colSpan={TABLE_COLUMNS.length}
-                    style={{ padding: 16, color: palette.text, opacity: 0.8, fontStyle: "italic", textAlign: "center" }}
-                  >
-                    Cargando registros...
-                  </td>
-                </tr>
-              )}
+              {loading &&
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={`skeleton-${i}`} style={{ borderBottom: `1px solid ${palette.border}` }}>
+                    {TABLE_COLUMNS.map((c) => (
+                      <td key={c.key} style={tdStyle(c.key)}>
+                        <Skeleton height={20} borderRadius={4} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
 
               {!loading && error && (
                 <tr>
@@ -1170,100 +1171,100 @@ export default function DashboardMain({ palette }) {
                     style={{
                       background: idx % 2 === 0 ? "rgba(3,23,24,0.20)" : "rgba(3,23,24,0.30)",
                       borderBottom: `1px solid ${palette.border}`,
-                  }}
-                >
-                  {/* Email (izquierda) */}
-                  <td style={tdStyle("email")}>
-                    <div style={TRUNCATE_STYLE}>
-                      <strong>{r.email}</strong>
-                    </div>
-                  </td>
+                    }}
+                  >
+                    {/* Email (izquierda) */}
+                    <td style={tdStyle("email")}>
+                      <div style={TRUNCATE_STYLE}>
+                        <strong>{r.email}</strong>
+                      </div>
+                    </td>
 
-                  {/* Nombre (izquierda) */}
-                  <td style={tdStyle("nombre")}>
-                    <div style={TRUNCATE_STYLE}>{r.nombre}</div>
-                  </td>
+                    {/* Nombre (izquierda) */}
+                    <td style={tdStyle("nombre")}>
+                      <div style={TRUNCATE_STYLE}>{r.nombre}</div>
+                    </td>
 
-                  {/* Sexo (centro) */}
-                  <td style={tdStyle("sexo")}>
-                    <div style={TRUNCATE_STYLE}>{formatSexForDisplay(r.sexo)}</div>
-                  </td>
+                    {/* Sexo (centro) */}
+                    <td style={tdStyle("sexo")}>
+                      <div style={TRUNCATE_STYLE}>{formatSexForDisplay(r.sexo)}</div>
+                    </td>
 
-                  {/* Fecha de nacimiento (centro) */}
-                  <td style={tdStyle("fechaNacimiento")}>
-                    <div style={TRUNCATE_STYLE}>{r.fechaNacimiento}</div>
-                  </td>
+                    {/* Fecha de nacimiento (centro) */}
+                    <td style={tdStyle("fechaNacimiento")}>
+                      <div style={TRUNCATE_STYLE}>{r.fechaNacimiento}</div>
+                    </td>
 
-                  {/* ¿Operado? (solo icono, centrado) */}
-                  <td style={tdStyle("operado")}>
-                    <div style={{ display: "grid", placeItems: "center" }}>
-                      {r.operado ? (
-                        <CheckIcon color={palette.accent} />
-                      ) : (
-                        <XIcon color={palette.text} />
-                      )}
-                    </div>
-                  </td>
+                    {/* ¿Operado? (solo icono, centrado) */}
+                    <td style={tdStyle("operado")}>
+                      <div style={{ display: "grid", placeItems: "center" }}>
+                        {r.operado ? (
+                          <CheckIcon color={palette.accent} />
+                        ) : (
+                          <XIcon color={palette.text} />
+                        )}
+                      </div>
+                    </td>
 
-                  {/* Formularios: "-" si no hay registro; “ojo” si hay (centrados) */}
-                  {OPTIONS.map((formName) => {
-                    const hasRecord = !!r.records?.[formName];
-                    const hasDetailView = DETAIL_FORMS.has(formName);
-                    return (
-                      <td key={`${r.id}-${formName}`} style={tdStyle(formName)}>
-                        <div style={{ display: "grid", placeItems: "center" }}>
-                          {hasRecord ? (
-                            hasDetailView ? (
-                              <button
-                                type="button"
-                                onClick={() => openFormDetailModal(formName, r)}
-                                title={`Ver detalles de ${formName}`}
-                                aria-label={`Ver detalles de ${formName}`}
-                                style={{
-                                  border: "none",
-                                  background: "transparent",
-                                  padding: 0,
-                                  cursor: "pointer",
-                                  display: "grid",
-                                  placeItems: "center",
-                                }}
-                              >
+                    {/* Formularios: "-" si no hay registro; “ojo” si hay (centrados) */}
+                    {OPTIONS.map((formName) => {
+                      const hasRecord = !!r.records?.[formName];
+                      const hasDetailView = DETAIL_FORMS.has(formName);
+                      return (
+                        <td key={`${r.id}-${formName}`} style={tdStyle(formName)}>
+                          <div style={{ display: "grid", placeItems: "center" }}>
+                            {hasRecord ? (
+                              hasDetailView ? (
+                                <button
+                                  type="button"
+                                  onClick={() => openFormDetailModal(formName, r)}
+                                  title={`Ver detalles de ${formName}`}
+                                  aria-label={`Ver detalles de ${formName}`}
+                                  style={{
+                                    border: "none",
+                                    background: "transparent",
+                                    padding: 0,
+                                    cursor: "pointer",
+                                    display: "grid",
+                                    placeItems: "center",
+                                  }}
+                                >
+                                  <EyeIcon color={palette.accent} />
+                                </button>
+                              ) : (
                                 <EyeIcon color={palette.accent} />
-                              </button>
+                              )
                             ) : (
-                              <EyeIcon color={palette.accent} />
-                            )
-                          ) : (
-                            <span style={dashStyle}>-</span>
-                          )}
-                        </div>
-                      </td>
-                    );
-                  })}
+                              <span style={dashStyle}>-</span>
+                            )}
+                          </div>
+                        </td>
+                      );
+                    })}
 
-                  {/* Columna de detalles */}
-                  <td style={tdStyle("detalles")}>
-                    <div style={{ display: "grid", placeItems: "center" }}>
-                      <button
-                        type="button"
-                        data-row-menu-trigger="true"
-                        onClick={(event) => toggleRowActionsMenu(r, event.currentTarget)}
-                        title="Ver detalles"
-                        aria-label="Ver detalles"
-                        style={{
-                          border: "none",
-                          background: "transparent",
-                          padding: 0,
-                          cursor: "pointer",
-                          display: "grid",
-                          placeItems: "center",
-                        }}
-                      >
-                        <DotsIcon color={palette.accent} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                    {/* Columna de detalles */}
+                    <td style={tdStyle("detalles")}>
+                      <div style={{ display: "grid", placeItems: "center" }}>
+                        <button
+                          type="button"
+                          data-row-menu-trigger="true"
+                          onClick={(event) => toggleRowActionsMenu(r, event.currentTarget)}
+                          title="Ver detalles"
+                          aria-label="Ver detalles"
+                          style={{
+                            border: "none",
+                            background: "transparent",
+                            padding: 0,
+                            cursor: "pointer",
+                            display: "grid",
+                            placeItems: "center",
+                          }}
+                        >
+                          <DotsIcon color={palette.accent} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
                 ))}
             </tbody>
           </table>
@@ -1410,16 +1411,16 @@ export default function DashboardMain({ palette }) {
                       transition: "transform .06s",
                       ...(isActive
                         ? {
-                            background: palette.accent,
-                            color: palette.ink,
-                            border: "none",
-                            boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25), inset 0 -2px 0 rgba(0,0,0,0.08)",
-                          }
+                          background: palette.accent,
+                          color: palette.ink,
+                          border: "none",
+                          boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25), inset 0 -2px 0 rgba(0,0,0,0.08)",
+                        }
                         : {
-                            background: "rgba(3,23,24,0.45)",
-                            color: palette.text,
-                            border: `1px solid ${palette.accent}`,
-                          }),
+                          background: "rgba(3,23,24,0.45)",
+                          color: palette.text,
+                          border: `1px solid ${palette.accent}`,
+                        }),
                     }}
                     onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
                     onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
