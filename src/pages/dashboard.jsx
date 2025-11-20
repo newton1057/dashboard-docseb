@@ -71,11 +71,6 @@ const getConversationPreview = (history) => {
   };
 };
 
-const truncateText = (text, maxLength = 80) => {
-  if (!text) return "";
-  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
-};
-
 const getConversationType = (conversation) => {
   const rawType =
     typeof conversation?.type === "string" ? conversation.type.trim().toLowerCase() : "";
@@ -351,6 +346,8 @@ export default function Dashboard() {
               boxShadow: "0 25px 60px rgba(0,0,0,0.55)",
               background: "rgba(2,10,11,0.92)",
               display: "flex",
+              position: "relative",
+              isolation: "isolate",
             }}
           >
             <iframe
@@ -364,8 +361,30 @@ export default function Dashboard() {
                 minHeight: 620,
                 border: "none",
                 display: "block",
+                filter: "blur(24px)",
+                transform: "scale(1.02)",
+                pointerEvents: "none",
               }}
             />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                textAlign: "center",
+                padding: "0 24px",
+                color: palette.text,
+                background:
+                  "linear-gradient(180deg, rgba(3,23,24,0.45) 0%, rgba(3,23,24,0.8) 100%)",
+                fontSize: "clamp(18px, 3vw, 26px)",
+                letterSpacing: 0.4,
+                fontWeight: 700,
+              }}
+            >
+              Muy pronto veras tus resultados
+            </div>
           </div>
         </div>
       );
@@ -435,7 +454,7 @@ export default function Dashboard() {
           >
             <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 letterSpacing: 1,
                 textTransform: "uppercase",
                 color: palette.textMuted,
@@ -461,6 +480,7 @@ export default function Dashboard() {
                     alignItems: "center",
                     gap: 10,
                     padding: "10px 12px",
+                    fontSize: 14,
                     fontWeight: 700,
                     color: isActive ? palette.ink : palette.text,
                     background: isActive ? palette.accent : "transparent",
@@ -489,7 +509,7 @@ export default function Dashboard() {
           >
             <div
               style={{
-                fontSize: 12,
+                fontSize: 11,
                 letterSpacing: 1,
                 textTransform: "uppercase",
                 color: palette.textMuted,
@@ -566,8 +586,8 @@ export default function Dashboard() {
                 const preview = getConversationPreview(
                   conversation?.conversationHistory
                 );
-                const title = truncateText(preview.title, 42);
-                const subtitle = truncateText(preview.subtitle, 90);
+                const title = preview.title;
+                const subtitle = preview.subtitle;
                 const isSelected =
                   selectedSessionId === conversation?.session_id;
                 const isDisabled = !conversation?.session_id;
@@ -642,6 +662,11 @@ export default function Dashboard() {
                           fontWeight: 600,
                           color: palette.text,
                           lineHeight: 1.4,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 1,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         }}
                       >
                         {title}
@@ -651,6 +676,11 @@ export default function Dashboard() {
                           fontSize: 12,
                           color: "rgba(233,255,208,0.7)",
                           lineHeight: 1.4,
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
                         }}
                       >
                         {subtitle}

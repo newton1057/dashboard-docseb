@@ -1,6 +1,7 @@
 // src/pages/Chat.jsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { FiImage, FiFilePlus, FiFileText, FiX } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -41,12 +42,127 @@ const generateSessionId = () => {
 const getTextFromParts = (parts) =>
   Array.isArray(parts)
     ? parts
-        .map((part) =>
-          typeof part?.text === "string" ? part.text.trim() : ""
-        )
-        .filter(Boolean)
-        .join("\n")
+      .map((part) =>
+        typeof part?.text === "string" ? part.text.trim() : ""
+      )
+      .filter(Boolean)
+      .join("\n")
     : "";
+
+const isImageMime = (value) =>
+  typeof value === "string" && value.toLowerCase().startsWith("image/");
+
+const extractFileNameFromUri = (uri) => {
+  if (!uri) return "";
+  try {
+    const parsed = new URL(uri);
+    const pathname = parsed.pathname || "";
+    const name = pathname.split("/").filter(Boolean).pop() || "";
+    return decodeURIComponent(name);
+  } catch {
+    const fallbackName =
+      uri
+        .split("?")[0]
+        .split("#")[0]
+        .split("/")
+        .filter(Boolean)
+        .pop() || "";
+    try {
+      return decodeURIComponent(fallbackName);
+    } catch {
+      return fallbackName;
+    }
+  }
+};
+
+const buildAttachmentFromFileData = (fileData, baseId, index) => {
+  if (!fileData?.fileUri) return null;
+  const mimeType =
+    typeof fileData.mimeType === "string" ? fileData.mimeType : "";
+  const url = fileData.fileUri;
+  return {
+    id: `${baseId}-file-${index}`,
+    kind: isImageMime(mimeType) ? "image" : "file",
+    mimeType,
+    url,
+    name: extractFileNameFromUri(url) || "Archivo adjunto",
+  };
+};
+
+const buildAttachmentFromInlineData = (inlineData, baseId, index) => {
+  const dataString =
+    typeof inlineData?.data === "string" ? inlineData.data : "";
+  if (!dataString) return null;
+  const mimeType =
+    typeof inlineData.mimeType === "string" ? inlineData.mimeType : "";
+  const isAlreadyDataUrl = dataString.startsWith("data:");
+  const url = isAlreadyDataUrl
+    ? dataString
+    : `data:${mimeType || "application/octet-stream"};base64,${dataString}`;
+
+  return {
+    id: `${baseId}-inline-${index}`,
+    kind: isImageMime(mimeType) ? "image" : "file",
+    mimeType,
+    url,
+    name: "Archivo adjunto",
+  };
+};
+
+const getAttachmentsFromParts = (parts, baseId) => {
+  if (!Array.isArray(parts)) return [];
+  const attachments = [];
+
+  parts.forEach((part, index) => {
+    const attachmentFromFileData = buildAttachmentFromFileData(
+      part?.fileData,
+      baseId,
+      index
+    );
+    if (attachmentFromFileData) {
+      attachments.push(attachmentFromFileData);
+      return;
+    }
+
+    const attachmentFromInline = buildAttachmentFromInlineData(
+      part?.inlineData,
+      baseId,
+      index
+    );
+    if (attachmentFromInline) {
+      attachments.push(attachmentFromInline);
+    }
+  });
+
+  return attachments;
+};
+
+const getMessageParts = (parts, baseId) => ({
+  text: getTextFromParts(parts),
+  attachments: getAttachmentsFromParts(parts, baseId),
+});
+
+const mapLocalAttachments = (images, files) => {
+  const imageItems = Array.isArray(images) ? images : [];
+  const fileItems = Array.isArray(files) ? files : [];
+
+  return [
+    ...imageItems.map((item, index) => ({
+      id: item.id || `local-image-${index}`,
+      kind: "image",
+      mimeType: item.file?.type || "image/jpeg",
+      url: item.url || "",
+      name: item.name || "Imagen adjunta",
+    })),
+    ...fileItems.map((item, index) => ({
+      id: item.id || `local-file-${index}`,
+      kind: "file",
+      mimeType: item.file?.type || "",
+      url: item.url || "",
+      name: item.name || "Archivo adjunto",
+    })),
+  ];
+};
 
 const buildMessagesFromHistory = (history) => {
   if (!Array.isArray(history)) return [];
@@ -58,14 +174,20 @@ const buildMessagesFromHistory = (history) => {
         entry?.role === "model"
           ? "assistant"
           : entry?.role === "user"
-          ? "user"
-          : null;
+            ? "user"
+            : null;
       if (!normalizedRole) return null;
+
+      const { text, attachments } = getMessageParts(
+        entry?.parts,
+        `${normalizedRole}-${timestamp}-${index}`
+      );
 
       return {
         id: `${normalizedRole}-${timestamp}-${index}`,
         role: normalizedRole,
-        content: getTextFromParts(entry?.parts),
+        content: text,
+        attachments,
         status: "complete",
       };
     })
@@ -79,6 +201,26 @@ const getLastAssistantIndex = (items) => {
     }
   }
   return -1;
+};
+
+const findAssistantIndex = (items, preferredId = null) => {
+  if (preferredId) {
+    const directIndex = items.findIndex(
+      (msg) => msg.id === preferredId && msg.role === "assistant"
+    );
+    if (directIndex >= 0) return directIndex;
+  }
+  return getLastAssistantIndex(items);
+};
+
+const updateAssistantMessage = (setState, preferredId, updater) => {
+  setState((prev) => {
+    const next = [...prev];
+    const targetIndex = findAssistantIndex(next, preferredId);
+    if (targetIndex < 0) return prev;
+    next[targetIndex] = updater(next[targetIndex], targetIndex);
+    return next;
+  });
 };
 
 const normalizeEmail = (value) => {
@@ -106,9 +248,16 @@ export default function ChatMain({
     sessionIdOverride || generateSessionId()
   );
   const [inputContainerHeight, setInputContainerHeight] = useState(0);
+  const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
+  const [imagePreviews, setImagePreviews] = useState([]);
+  const [filePreviews, setFilePreviews] = useState([]);
   const typingIntervalRef = useRef(null);
+  const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
   const inputContainerRef = useRef(null);
+  const plusMenuWrapperRef = useRef(null);
+  const imageInputRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   // Fade dinámico
   const scrollAreaRef = useRef(null);
@@ -119,6 +268,13 @@ export default function ChatMain({
     if (typingIntervalRef.current) {
       clearInterval(typingIntervalRef.current);
       typingIntervalRef.current = null;
+    }
+  };
+
+  const clearTypingTimeout = () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = null;
     }
   };
 
@@ -175,8 +331,34 @@ export default function ChatMain({
   useEffect(() => {
     return () => {
       clearTypingInterval();
+      clearTypingTimeout();
+
+      // Limpia URLs creadas para imágenes cuando se desmonta
+      imagePreviews.forEach((item) => {
+        if (item?.url) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
     };
-  }, []);
+  }, [imagePreviews]);
+
+  useEffect(() => {
+    if (!isPlusMenuOpen) return undefined;
+
+    const handleClickOutside = (event) => {
+      if (
+        plusMenuWrapperRef.current &&
+        !plusMenuWrapperRef.current.contains(event.target)
+      ) {
+        setIsPlusMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isPlusMenuOpen]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -191,11 +373,16 @@ export default function ChatMain({
 
     if (!trimmed || isThinking) return;
 
+    const pendingAttachments = mapLocalAttachments(
+      imagePreviews,
+      filePreviews
+    );
     const userMessage = {
       id: `user-${Date.now()}`,
       role: "user",
       content: trimmed,
       status: "sent",
+      attachments: pendingAttachments,
     };
 
     setMessages((prev) => [...prev, userMessage]);
@@ -210,6 +397,80 @@ export default function ChatMain({
     }
   };
 
+  const handleAddImages = () => {
+    setIsPlusMenuOpen(false);
+    if (imageInputRef.current) {
+      imageInputRef.current.click();
+    }
+  };
+
+  const handleAddFiles = () => {
+    setIsPlusMenuOpen(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleImagesSelected = (event) => {
+    const { files } = event.target;
+    if (!files || files.length === 0) return;
+    const allowed = Array.from(files).filter((file) => {
+      const name = file.name?.toLowerCase() || "";
+      return file.type === "image/jpeg" || name.endsWith(".jpg") || name.endsWith(".jpeg");
+    });
+    if (allowed.length === 0) {
+      event.target.value = "";
+      return;
+    }
+    const mapped = allowed.map((file, index) => ({
+      id: `${file.name}-${Date.now()}-${index}`,
+      name: file.name,
+      url: URL.createObjectURL(file),
+      file,
+    }));
+    setImagePreviews((prev) => [...prev, ...mapped]);
+    // Clear to allow re-selecting the same file later
+    event.target.value = "";
+  };
+
+  const handleFilesSelected = (event) => {
+    const { files } = event.target;
+    if (!files || files.length === 0) return;
+    const mapped = Array.from(files).map((file, index) => ({
+      id: `${file.name}-${Date.now()}-${index}`,
+      name: file.name,
+      file,
+    }));
+    setFilePreviews((prev) => [...prev, ...mapped]);
+    event.target.value = "";
+  };
+
+  const handleRemoveImage = (id) => {
+    setImagePreviews((prev) => {
+      const target = prev.find((item) => item.id === id);
+      if (target?.url) {
+        URL.revokeObjectURL(target.url);
+      }
+      return prev.filter((item) => item.id !== id);
+    });
+  };
+
+  const handleRemoveFile = (id) => {
+    setFilePreviews((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const clearAttachments = () => {
+    setImagePreviews((prev) => {
+      prev.forEach((item) => {
+        if (item?.url) {
+          URL.revokeObjectURL(item.url);
+        }
+      });
+      return [];
+    });
+    setFilePreviews([]);
+  };
+
   const triggerAssistantResponse = async (userContent) => {
     const assistantId = `assistant-${Date.now()}`;
     setIsThinking(true);
@@ -219,11 +480,13 @@ export default function ChatMain({
         id: assistantId,
         role: "assistant",
         content: "",
+        attachments: [],
         status: "thinking",
       },
     ]);
 
     let isAnimatingResponse = false;
+    let requestSucceeded = false;
 
     try {
       const dataPayload = toDataPayload(contextData);
@@ -236,18 +499,46 @@ export default function ChatMain({
             normalizeEmail(contextData?.email) ||
             normalizeEmail(contextData?.info?.email)
           : null;
-      const payload = {
-        message: userContent,
-        session_id: sessionId,
-        ...(typeValue ? { type: typeValue } : {}),
-        ...(typeValue === "specific" ? { email: normalizedSpecificEmail } : {}),
-        ...(dataPayload ? { data: dataPayload } : {}),
-      };
+      const filesToSend = [...imagePreviews, ...filePreviews]
+        .map((item) => item?.file)
+        .filter(Boolean);
+      const hasUploads = filesToSend.length > 0;
+
+      let requestBody;
+      let requestHeaders;
+
+      if (hasUploads) {
+        const formData = new FormData();
+        formData.append("message", userContent);
+        formData.append("session_id", sessionId);
+        if (typeValue) formData.append("type", typeValue);
+        if (typeValue === "specific" && normalizedSpecificEmail) {
+          formData.append("email", normalizedSpecificEmail);
+        }
+        if (dataPayload) {
+          formData.append("data", JSON.stringify(dataPayload));
+        }
+        filesToSend.forEach((file) => {
+          formData.append("files", file);
+        });
+        requestBody = formData;
+        requestHeaders = undefined;
+      } else {
+        const payload = {
+          message: userContent,
+          session_id: sessionId,
+          ...(typeValue ? { type: typeValue } : {}),
+          ...(typeValue === "specific" ? { email: normalizedSpecificEmail } : {}),
+          ...(dataPayload ? { data: dataPayload } : {}),
+        };
+        requestBody = JSON.stringify(payload);
+        requestHeaders = { "Content-Type": "application/json" };
+      }
 
       const response = await fetch(API_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        headers: requestHeaders,
+        body: requestBody,
       });
 
       if (!response.ok) {
@@ -264,26 +555,50 @@ export default function ChatMain({
 
         if (lastAssistantIndex >= 0) {
           const assistantText =
-            historyMessages[lastAssistantIndex]?.content || "";
+            typeof historyMessages[lastAssistantIndex]?.content === "string"
+              ? historyMessages[lastAssistantIndex].content
+              : "";
+          const shouldAnimateTyping = assistantText.trim().length > 0;
 
           historyMessages[lastAssistantIndex] = {
             ...historyMessages[lastAssistantIndex],
             id: assistantId,
-            content: assistantText ? "" : assistantText,
-            status: assistantText ? "typing" : "complete",
+            content: shouldAnimateTyping ? "" : assistantText,
+            status: shouldAnimateTyping ? "typing" : "complete",
           };
 
           setMessages(historyMessages);
+          requestSucceeded = true;
 
-          if (assistantText) {
+          if (shouldAnimateTyping) {
             isAnimatingResponse = true;
-            startTypingResponse(assistantId, assistantText);
+            // Aseguramos que el state ya esté aplicado antes de animar
+            setTimeout(() => {
+              try {
+                startTypingResponse(assistantId, assistantText);
+              } catch (err) {
+                console.error("No se pudo iniciar animación de tipeo:", err);
+                updateAssistantMessage(
+                  setMessages,
+                  assistantId,
+                  (msg) => ({
+                    ...msg,
+                    content: assistantText,
+                    status: "complete",
+                  })
+                );
+                setIsThinking(false);
+              }
+            }, 0);
+          } else {
+            setIsThinking(false);
           }
 
           return;
         }
 
         setMessages(historyMessages);
+        requestSucceeded = true;
         return;
       }
 
@@ -299,21 +614,25 @@ export default function ChatMain({
             : msg
         )
       );
+      requestSucceeded = true;
     } catch (error) {
       console.error("Error fetching assistant response:", error);
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantId
             ? {
-                ...msg,
-                content:
-                  "Ocurrió un error al comunicarse con la IA. Intenta otra vez.",
-                status: "complete",
-              }
+              ...msg,
+              content:
+                "Ocurrió un error al comunicarse con la IA. Intenta otra vez.",
+              status: "complete",
+            }
             : msg
         )
       );
     } finally {
+      if (requestSucceeded) {
+        clearAttachments();
+      }
       if (!isAnimatingResponse) {
         setIsThinking(false);
       }
@@ -322,30 +641,64 @@ export default function ChatMain({
 
   const startTypingResponse = (messageId, text) => {
     clearTypingInterval();
+    clearTypingTimeout();
+
+    const safeText = typeof text === "string" ? text : String(text || "");
+    if (!safeText) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === messageId
+            ? { ...msg, content: "", status: "complete" }
+            : msg
+        )
+      );
+      setIsThinking(false);
+      return;
+    }
 
     let index = 0;
+    const fallbackMs = Math.min(
+      Math.max(safeText.length * TYPING_INTERVAL + 1200, 4000),
+      20000
+    );
+
+    typingTimeoutRef.current = setTimeout(() => {
+      updateAssistantMessage(setMessages, messageId, (msg) => ({
+        ...msg,
+        content: safeText,
+        status: "complete",
+      }));
+      clearTypingInterval();
+      clearTypingTimeout();
+      setIsThinking(false);
+    }, fallbackMs);
 
     typingIntervalRef.current = setInterval(() => {
       index += TYPING_STEP;
 
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === messageId
-            ? {
-                ...msg,
-                content: text.slice(0, index),
-                status:
-                  index >= text.length ? "complete" : msg.status || "typing",
-              }
-            : msg
-        )
-      );
+      updateAssistantMessage(setMessages, messageId, (msg) => ({
+        ...msg,
+        content: safeText.slice(0, index),
+        status: index >= safeText.length ? "complete" : "typing",
+      }));
 
-      if (index >= text.length) {
+      if (index >= safeText.length) {
         clearTypingInterval();
+        clearTypingTimeout();
         setIsThinking(false);
       }
     }, TYPING_INTERVAL);
+
+    // Salvaguarda extra: si por alguna razón no se actualiza status, lo forzamos
+    setTimeout(() => {
+      updateAssistantMessage(setMessages, messageId, (msg) => {
+        if (msg.status === "complete") return msg;
+        return { ...msg, content: safeText, status: "complete" };
+      });
+      clearTypingInterval();
+      clearTypingTimeout();
+      setIsThinking(false);
+    }, Math.min(fallbackMs + 1000, 22000));
   };
 
   const hasMessages = messages.length > 0;
@@ -361,17 +714,17 @@ export default function ChatMain({
 
   const quickPrompts = [
     {
-      title: "Resumir documentos",
-      detail: "Convierte PDFs extensos en puntos clave listos para compartir.",
+      title: "El modelo sigue aprendiendo",
+      detail: "Todavía puede equivocarse o no entender del todo el contexto. Tu uso nos ayuda a mejorarlo.",
     },
     {
-      title: "Diseñar formularios",
-      detail: "Pide un flujo adaptado a tu operación y recibe el esquema.",
+      title: "Ayúdanos a mejorar",
+      detail: "Si ves una respuesta confusa o incorrecta, no olvides reportárnoslo o dejarnos tus comentarios.",
     },
     {
-      title: "Ideas de automatización",
-      detail: "Descubre tareas repetitivas que puedes delegar a la IA.",
-    },
+      title: "Entre más contexto, mejor",
+      detail: "Agrega ejemplos, datos y lo que quieres lograr para que las respuestas sean más útiles y precisas.",
+    }
   ];
 
   const handleScroll = () => {
@@ -485,6 +838,22 @@ export default function ChatMain({
                         : "Escribiendo…"
                       : "";
                   const shouldShowLabel = label || typingHint;
+                  const attachments = Array.isArray(msg.attachments)
+                    ? msg.attachments
+                    : [];
+                  const hasAttachments = attachments.length > 0;
+                  const rawContent =
+                    typeof msg.content === "string" ? msg.content : "";
+                  const hasText = Boolean(rawContent.trim());
+                  const placeholderText =
+                    !hasText && !hasAttachments
+                      ? rawContent ||
+                        (msg.status === "thinking" || msg.status === "typing"
+                          ? "…"
+                          : "")
+                      : "";
+                  const textToRender = hasText ? rawContent : placeholderText;
+                  const shouldRenderText = Boolean(textToRender);
                   return (
                     <div
                       key={msg.id}
@@ -522,15 +891,145 @@ export default function ChatMain({
                           WebkitBackdropFilter: "blur(3px)",
                         }}
                       >
-                        {isUser ? (
-                          <span style={{ whiteSpace: "pre-wrap" }}>
-                            {msg.content || "…"}
-                          </span>
-                        ) : (
-                          <div className="chat-markdown">
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                              {msg.content || "…"}
-                            </ReactMarkdown>
+                        {shouldRenderText &&
+                          (isUser ? (
+                            <span style={{ whiteSpace: "pre-wrap" }}>
+                              {textToRender}
+                            </span>
+                          ) : (
+                            <div className="chat-markdown">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {textToRender}
+                              </ReactMarkdown>
+                            </div>
+                          ))}
+                        {hasAttachments && (
+                          <div
+                            style={{
+                              display: "flex",
+                              flexWrap: "wrap",
+                              gap: 12,
+                              marginTop: shouldRenderText ? 12 : 0,
+                            }}
+                          >
+                            {attachments.map((attachment, attachmentIndex) => {
+                              const hasUrl = Boolean(attachment?.url);
+                              const attachmentId =
+                                attachment?.id ||
+                                `${msg.id}-attachment-${attachmentIndex}`;
+                              const name =
+                                attachment?.name ||
+                                (attachment?.kind === "image"
+                                  ? "Imagen adjunta"
+                                  : "Archivo adjunto");
+                              const renderAsImage =
+                                (attachment?.kind === "image" ||
+                                  isImageMime(attachment?.mimeType)) &&
+                                hasUrl;
+                              const cardBorder = `1px solid ${borderColor}`;
+                              const commonShadow =
+                                "0 10px 25px rgba(0,0,0,0.28)";
+
+                              if (renderAsImage) {
+                                const imageContent = (
+                                  <div
+                                    style={{
+                                      position: "relative",
+                                      width: 160,
+                                      height: 160,
+                                      borderRadius: 14,
+                                      overflow: "hidden",
+                                      border: cardBorder,
+                                      background: "rgba(255,255,255,0.04)",
+                                      boxShadow: commonShadow,
+                                    }}
+                                  >
+                                    <img
+                                      src={attachment.url}
+                                      alt="Imagen adjunta"
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        objectFit: "cover",
+                                        display: "block",
+                                      }}
+                                    />
+                                  </div>
+                                );
+                                return hasUrl ? (
+                                  <a
+                                    key={attachmentId}
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    style={{ textDecoration: "none" }}
+                                  >
+                                    {imageContent}
+                                  </a>
+                                ) : (
+                                  <div key={attachmentId}>{imageContent}</div>
+                                );
+                              }
+
+                              const fileCard = (
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 10,
+                                    padding: "10px 12px",
+                                    borderRadius: 12,
+                                    border: cardBorder,
+                                    background: "rgba(255,255,255,0.04)",
+                                    color: palette.text,
+                                    boxShadow: commonShadow,
+                                    minWidth: 180,
+                                    maxWidth: 280,
+                                  }}
+                                >
+                                  <FiFileText
+                                    aria-hidden="true"
+                                    style={{ fontSize: 18 }}
+                                  />
+                                  <div
+                                    style={{
+                                      flex: 1,
+                                      fontSize: 13,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                    title={name}
+                                  >
+                                    {name}
+                                  </div>
+                                  {hasUrl && (
+                                    <span
+                                      style={{
+                                        fontSize: 12,
+                                        color: "rgba(233,255,208,0.85)",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      Abrir
+                                    </span>
+                                  )}
+                                </div>
+                              );
+                              return hasUrl ? (
+                                <a
+                                  key={attachmentId}
+                                  href={attachment.url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{ textDecoration: "none" }}
+                                >
+                                  {fileCard}
+                                </a>
+                              ) : (
+                                <div key={attachmentId}>{fileCard}</div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -558,7 +1057,7 @@ export default function ChatMain({
                   marginBottom: 12,
                 }}
               >
-                ¿En qué puedo ayudar, Edu?
+                ¿En qué puedo ayudar, Dr. Sebastián?
               </p>
               <p
                 style={{
@@ -566,12 +1065,11 @@ export default function ChatMain({
                   color: "rgba(233,255,208,0.7)",
                   maxWidth: 620,
                   margin: "0 auto",
-                  lineHeight: 1.6,
+                  lineHeight: 1.2,
                 }}
               >
-                Describe lo que necesitas y me encargo de idear prompts,
-                sintetizar información o construir flujos inteligentes para tu
-                equipo.
+                Cuéntame qué necesitas y te ayudo al instante:<br />ideas, textos,
+                resúmenes y respuestas claras a tus dudas.
               </p>
             </div>
 
@@ -638,11 +1136,137 @@ export default function ChatMain({
           gap: 0,
         }}
       >
+      {(imagePreviews.length > 0 || filePreviews.length > 0) && (
         <div
           style={{
-            borderRadius: 28,
-            border: `1px solid ${palette.border}`,
-            background: palette.bg2 || "#0B2A2B",
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 10,
+            marginBottom: 12,
+          }}
+        >
+          {imagePreviews.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                position: "relative",
+                width: 86,
+                height: 86,
+                borderRadius: 14,
+                overflow: "hidden",
+                border: `1px solid ${palette.border}`,
+                background: "rgba(255,255,255,0.04)",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
+              }}
+            >
+              <img
+                src={item.url}
+                alt={item.name || "imagen seleccionada"}
+                style={{
+                  width: "100%",
+                  height: "100%",
+                  objectFit: "cover",
+                  display: "block",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveImage(item.id)}
+                aria-label="Eliminar imagen"
+                style={{
+                  position: "absolute",
+                  top: 6,
+                  right: 6,
+                  width: 24,
+                  height: 24,
+                  minWidth: 24,
+                  minHeight: 24,
+                  aspectRatio: "1 / 1",
+                  borderRadius: "50%",
+                  border: `1px solid ${palette.border}`,
+                  background: "rgba(3,23,24,0.92)",
+                  color: palette.text,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
+                  lineHeight: 1,
+                }}
+              >
+                <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
+              </button>
+            </div>
+          ))}
+          {filePreviews.map((item) => (
+            <div
+              key={item.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: `1px solid ${palette.border}`,
+                background: "rgba(255,255,255,0.04)",
+                boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
+                color: palette.text,
+                maxWidth: 240,
+              }}
+            >
+              <FiFileText aria-hidden="true" style={{ fontSize: 18 }} />
+              <div
+                style={{
+                  flex: 1,
+                  fontSize: 13,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+                title={item.name}
+              >
+                {item.name || "Archivo PDF"}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemoveFile(item.id)}
+                aria-label="Eliminar archivo"
+                style={{
+                  width: 24,
+                  height: 24,
+                  minWidth: 24,
+                  minHeight: 24,
+                  aspectRatio: "1 / 1",
+                  borderRadius: "50%",
+                  border: `1px solid ${palette.border}`,
+                  background: "rgba(3,23,24,0.92)",
+                  color: palette.text,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  padding: 0,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
+                  flexShrink: 0,
+                  lineHeight: 1,
+                }}
+              >
+                <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div
+        style={{
+          borderRadius: 28,
+          border: `1px solid ${palette.border}`,
+          background: palette.bg2 || "#0B2A2B",
             boxShadow:
               "0 15px 35px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
             padding: "18px 22px",
@@ -651,9 +1275,139 @@ export default function ChatMain({
             gap: 20,
           }}
         >
+          <div
+            ref={plusMenuWrapperRef}
+            style={{
+              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <input
+              type="file"
+              ref={imageInputRef}
+              accept="image/jpeg"
+              multiple
+              onChange={handleImagesSelected}
+              style={{ display: "none" }}
+            />
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="application/pdf"
+              multiple
+              onChange={handleFilesSelected}
+              style={{ display: "none" }}
+            />
+            <button
+              type="button"
+              aria-label="abrir opciones"
+              onClick={() => setIsPlusMenuOpen((value) => !value)}
+              disabled={isThinking}
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: "50%",
+                border: "none",
+                aspectRatio: "1 / 1",
+                padding: 0,
+                background: palette.accent,
+                color: palette.ink,
+                fontWeight: 700,
+                fontSize: 20,
+                lineHeight: 1,
+                cursor: isThinking ? "not-allowed" : "pointer",
+                opacity: isThinking ? 0.5 : 1,
+                boxShadow: "0 10px 25px rgba(210,242,82,0.35)",
+                transition: "opacity 0.2s ease",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              +
+            </button>
+            {isPlusMenuOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  bottom: "calc(100% + 10px)",
+                  minWidth: 200,
+                  padding: 8,
+                  borderRadius: 12,
+                  background: palette.surface || "rgba(3,23,24,0.85)",
+                  border: `1px solid ${palette.border}`,
+                  boxShadow: "0 16px 30px rgba(0,0,0,0.35)",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 6,
+                  zIndex: 5,
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleAddImages}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    background: "transparent",
+                    color: palette.text,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    transition: "background 0.2s ease, color 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <FiImage
+                    aria-hidden="true"
+                    style={{ fontSize: 16, color: palette.text }}
+                  />
+                  Añadir imágenes
+                </button>
+                <button
+                  type="button"
+                  onClick={handleAddFiles}
+                  style={{
+                    width: "100%",
+                    border: "none",
+                    borderRadius: 8,
+                    padding: "10px 12px",
+                    background: "transparent",
+                    color: palette.text,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    textAlign: "left",
+                    cursor: "pointer",
+                    transition: "background 0.2s ease, color 0.2s ease",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <FiFilePlus
+                    aria-hidden="true"
+                    style={{ fontSize: 16, color: palette.text }}
+                  />
+                  Añadir archivos
+                </button>
+              </div>
+            )}
+          </div>
           <textarea
+            className="chat-input"
             placeholder="Pregunta lo que quieras"
             style={{
+              "--chat-placeholder-color": "rgba(210, 242, 82, 0.4)",
               flex: 1,
               background: "transparent",
               border: "none",
@@ -679,6 +1433,8 @@ export default function ChatMain({
               height: 44,
               borderRadius: "50%",
               border: "none",
+              aspectRatio: "1 / 1",
+              padding: 0,
               background: palette.accent,
               color: palette.ink,
               fontWeight: 700,

@@ -434,6 +434,7 @@ export default function DashboardMain({ palette }) {
   const [selected, setSelected] = useState(new Set());
   const [copyState, setCopyState] = useState("idle");
   const [rows, setRows] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formDetailModal, setFormDetailModal] = useState(null);
@@ -445,6 +446,17 @@ export default function DashboardMain({ palette }) {
   const [isChatConversationLoading, setIsChatConversationLoading] = useState(false);
   const [chatConversationError, setChatConversationError] = useState(null);
   const chatConversationAbortRef = useRef(null);
+  const hasSearch = searchTerm.trim() !== "";
+
+  const filteredRows = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return rows;
+    return rows.filter((row) => {
+      const email = typeof row.email === "string" ? row.email.toLowerCase() : "";
+      const name = typeof row.nombre === "string" ? row.nombre.toLowerCase() : "";
+      return email.includes(term) || name.includes(term);
+    });
+  }, [rows, searchTerm]);
 
   useEffect(() => {
     let active = true;
@@ -1072,25 +1084,43 @@ export default function DashboardMain({ palette }) {
           Formularios
         </h1>
 
-        <button
-          type="button"
-          onClick={() => {
-            setCopyState("idle");
-            setOpen(true);
-          }}
-          style={{
-            padding: "10px 16px",
-            border: "none",
-            borderRadius: 10,
-            fontWeight: 800,
-            background: palette.accent,
-            color: palette.ink,
-            boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25)",
-            cursor: "pointer",
-          }}
-        >
-          Enviar
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+          <input
+            type="search"
+            className="search-input"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar email o nombre"
+            style={{
+              width: 260,
+              padding: "10px 12px",
+              borderRadius: 10,
+              color: palette.text,
+              fontSize: 13,
+            }}
+          />
+
+          <button
+            type="button"
+            onClick={() => {
+              setCopyState("idle");
+              setOpen(true);
+            }}
+            style={{
+              padding: "10px 16px",
+              border: "none",
+              borderRadius: 10,
+              fontWeight: 800,
+              fontSize: 12,
+              background: palette.accent,
+              color: palette.ink,
+              boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25)",
+              cursor: "pointer",
+            }}
+          >
+            Enviar
+          </button>
+        </div>
       </div>
 
       {/* TABLA */}
@@ -1152,20 +1182,20 @@ export default function DashboardMain({ palette }) {
                 </tr>
               )}
 
-              {!loading && !error && rows.length === 0 && (
+              {!loading && !error && filteredRows.length === 0 && (
                 <tr>
                   <td
                     colSpan={TABLE_COLUMNS.length}
                     style={{ padding: 16, color: palette.text, opacity: 0.8, fontStyle: "italic", textAlign: "center" }}
                   >
-                    Aún no hay registros.
+                    {hasSearch ? "No hay registros que coincidan con la búsqueda." : "Aún no hay registros."}
                   </td>
                 </tr>
               )}
 
               {!loading &&
                 !error &&
-                rows.map((r, idx) => (
+                filteredRows.map((r, idx) => (
                   <tr
                     key={r.id}
                     style={{

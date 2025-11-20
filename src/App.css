@@ -71,3 +71,33 @@
 .read-the-docs {
   color: #888;
 }
+
+.search-input {
+  border: 1px solid rgba(210, 242, 82, 0.35);
+  background: linear-gradient(135deg, rgba(3, 23, 24, 0.75), rgba(12, 45, 45, 0.9));
+  color: #e9ffd0;
+  box-shadow:
+    0 0 0 1px rgba(210, 242, 82, 0.08),
+    0 12px 24px rgba(0, 0, 0, 0.35);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+  outline: none;
+}
+
+.search-input:hover {
+  border-color: rgba(210, 242, 82, 0.55);
+  box-shadow:
+    0 0 0 1px rgba(210, 242, 82, 0.15),
+    0 14px 28px rgba(0, 0, 0, 0.4);
+}
+
+.search-input:focus {
+  border-color: rgba(210, 242, 82, 0.8);
+  box-shadow:
+    0 0 0 2px rgba(210, 242, 82, 0.22),
+    0 16px 34px rgba(0, 0, 0, 0.48);
+  background: linear-gradient(135deg, rgba(4, 28, 29, 0.9), rgba(18, 60, 60, 0.95));
+}
+
+.search-input::placeholder {
+  color: rgba(210, 242, 82, 0.5);
+}
