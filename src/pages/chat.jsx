@@ -282,6 +282,7 @@ export default function ChatMain({
     setMessages(initialMessages);
     setIsThinking(false);
     clearTypingInterval();
+    clearTypingTimeout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessages]);
 
@@ -330,10 +331,7 @@ export default function ChatMain({
 
   useEffect(() => {
     return () => {
-      clearTypingInterval();
-      clearTypingTimeout();
-
-      // Limpia URLs creadas para imágenes cuando se desmonta
+      // Limpia URLs creadas para imágenes cuando se desmontan o cambian
       imagePreviews.forEach((item) => {
         if (item?.url) {
           URL.revokeObjectURL(item.url);
@@ -341,6 +339,14 @@ export default function ChatMain({
       });
     };
   }, [imagePreviews]);
+
+  // Limpia timers de tipeo al desmontar el componente
+  useEffect(() => {
+    return () => {
+      clearTypingInterval();
+      clearTypingTimeout();
+    };
+  }, []);
 
   useEffect(() => {
     if (!isPlusMenuOpen) return undefined;
