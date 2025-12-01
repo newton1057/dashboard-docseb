@@ -110,7 +110,7 @@ export default function Login() {
             margin: "0 0 6px",
           }}
         >
-          Bienvenido <span style={{ color: "#D2F252" }}>Dr. Sebastián</span>
+          Bienvenido a ima
         </h1>
 
         <p

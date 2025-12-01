@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Skeleton from "../components/Skeleton";
 
 const RECORDS_ENDPOINT = "https://demo-get-medicalrecords-json-448238488830.northamerica-south1.run.app";
@@ -29,16 +29,34 @@ function XIcon({ size = 18, color = "currentColor" }) {
     );
 }
 
-const formatTimestamp = (isoString) => {
-    if (!isoString) return "—";
-    const date = new Date(isoString);
-    return date.toLocaleString("es-MX", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-    });
+const getLatestEncounterReason = (encounters) => {
+    if (!Array.isArray(encounters) || encounters.length === 0) return "—";
+
+    const getTimestamp = (encounter) => {
+        const raw = encounter?.period?.start || encounter?.period?.end || "";
+        const parsed = Date.parse(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+
+    const sorted = [...encounters].sort((a, b) => getTimestamp(b) - getTimestamp(a));
+
+    for (const encounter of sorted) {
+        const reasonText =
+            typeof encounter?.reason?.reason_text === "string"
+                ? encounter.reason.reason_text.trim()
+                : "";
+        if (reasonText) return reasonText;
+
+        const codes = Array.isArray(encounter?.reason?.reason_codes)
+            ? encounter.reason.reason_codes
+            : [];
+        const codeDisplay = codes.find(
+            (code) => typeof code?.display === "string" && code.display.trim(),
+        );
+        if (codeDisplay?.display) return codeDisplay.display.trim();
+    }
+
+    return "—";
 };
 
 export default function ExpedientesMain({ palette }) {
@@ -280,16 +298,16 @@ export default function ExpedientesMain({ palette }) {
                     >
                         <colgroup>
                             <col style={{ width: "30%" }} />
-                            <col style={{ width: "20%" }} />
-                            <col style={{ width: "20%" }} />
-                            <col style={{ width: "20%" }} />
+                            <col style={{ width: "18%" }} />
+                            <col style={{ width: "24%" }} />
+                            <col style={{ width: "18%" }} />
                             <col style={{ width: "10%" }} />
                         </colgroup>
                         <thead>
                             <tr>
                                 <th style={thStyle("left")}>Nombre del Paciente</th>
                                 <th style={thStyle("left")}>Médico Tratante</th>
-                                <th style={thStyle("left")}>Fecha de Registro</th>
+                                <th style={thStyle("left")}>Motivo de Consulta</th>
                                 <th style={thStyle("left")}>Diagnóstico Principal</th>
                                 <th style={thStyle("center")}>Acciones</th>
                             </tr>
@@ -325,7 +343,7 @@ export default function ExpedientesMain({ palette }) {
                             {!loading && !error && filteredRows.map((row, idx) => {
                                 const patientName = row.patient?.name ? `${row.patient.name.given.join(" ")} ${row.patient.name.family}` : "—";
                                 const doctorName = row.patient?.primary_care_provider?.name || "—";
-                                const date = formatTimestamp(row.record_metadata?.created_at);
+                                const reason = getLatestEncounterReason(row.prior_encounters);
                                 const diagnosis = row.diagnoses?.[0]?.code?.display || "—";
 
                                 return (
@@ -343,7 +361,7 @@ export default function ExpedientesMain({ palette }) {
                                             <div style={TRUNCATE_STYLE}>{doctorName}</div>
                                         </td>
                                         <td style={tdStyle("left")}>
-                                            <div style={TRUNCATE_STYLE}>{date}</div>
+                                            <div style={TRUNCATE_STYLE}>{reason}</div>
                                         </td>
                                         <td style={tdStyle("left")}>
                                             <div style={TRUNCATE_STYLE}>{diagnosis}</div>

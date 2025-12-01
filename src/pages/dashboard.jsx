@@ -486,7 +486,7 @@ export default function Dashboard() {
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              padding: "0 12px 24px",
+              padding: "0 0 24px",
               gap: 12,
               minHeight: 0,
               textAlign: "left",
@@ -498,7 +498,7 @@ export default function Dashboard() {
                 letterSpacing: 1,
                 textTransform: "uppercase",
                 color: palette.textMuted,
-                padding: "4px 0",
+                padding: "4px 10px",
                 textAlign: "left",
               }}
             >
@@ -507,14 +507,14 @@ export default function Dashboard() {
             <div
               style={{
                 flex: 1,
-                overflowY: "auto",
-                display: "flex",
-                flexDirection: "column",
-                gap: 10,
-                paddingRight: 6,
-                minHeight: 0,
-              }}
-            >
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column",
+              gap: 10,
+              paddingRight: 0,
+              minHeight: 0,
+            }}
+          >
               {isLoadingConversations && (
                 <div
                   style={{
@@ -589,6 +589,12 @@ export default function Dashboard() {
                 const isHovered = hoveredConversationId === conversationKey;
                 const isMenuOpen = openConversationOptionsId === conversationKey;
                 const showOptionsButton = isHovered || isMenuOpen;
+                const baseBackground = isSelected
+                  ? "rgba(210,242,82,0.08)"
+                  : "rgba(3,23,24,0.85)";
+                const hoverBackground = isSelected
+                  ? "rgba(210,242,82,0.12)"
+                  : "rgba(233,255,208,0.08)";
                 const sessionIdLabel = showSessionId
                   ? sessionIdValue || "ID desconocido"
                   : null;
@@ -608,19 +614,16 @@ export default function Dashboard() {
                         handleConversationClick(conversation?.session_id)
                       }
                       disabled={isDisabled}
-                      style={{
-                        padding: "12px 14px",
-                        borderRadius: 14,
-                        background: isSelected
-                          ? "rgba(210,242,82,0.08)"
-                          : "rgba(3,23,24,0.85)",
-                        border: `1px solid ${isSelected ? palette.accent : palette.border
-                          }`,
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 6,
-                        textAlign: "left",
+                    style={{
+                      padding: "12px 14px",
+                      borderRadius: 0,
+                      background: isHovered ? hoverBackground : baseBackground,
+                      border: "none",
+                      boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 6,
+                      textAlign: "left",
                         cursor: isDisabled ? "default" : "pointer",
                         opacity: isLoadingCurrent ? 0.65 : 1,
                         transition: "background 0.2s ease, border 0.2s ease",
