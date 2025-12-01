@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { ButterflyIcon } from "../utils/icons";
 import DashboardMain from "./main";
 import ChatMain from "./chat";
+import ExpedientesMain from "./expedientes";
 import { clearSession, isSessionValid, markSessionStart } from "../utils/auth";
 
 const palette = {
@@ -19,11 +20,11 @@ const palette = {
 };
 
 const CONVERSATIONS_ENDPOINT =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversations";
+  "https://demo-ai-448238488830.northamerica-south1.run.app/modelsAI/conversations";
 const CONVERSATION_DETAIL_ENDPOINT =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversation";
+  "https://demo-ai-448238488830.northamerica-south1.run.app/modelsAI/conversation";
 const DELETE_CONVERSATION_ENDPOINT =
-  "https://delete-chat-229745866329.northamerica-south1.run.app";
+  "https://delete-chat-448238488830.northamerica-south1.run.app";
 const LOOKER_EMBED_URL =
   "https://lookerstudio.google.com/embed/reporting/1a6767f6-18d9-48e7-a247-2e9131b7378a/page/9F1bF";
 
@@ -361,30 +362,9 @@ export default function Dashboard() {
                 minHeight: 620,
                 border: "none",
                 display: "block",
-                filter: "blur(24px)",
                 transform: "scale(1.02)",
-                pointerEvents: "none",
               }}
             />
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                textAlign: "center",
-                padding: "0 24px",
-                color: palette.text,
-                background:
-                  "linear-gradient(180deg, rgba(3,23,24,0.45) 0%, rgba(3,23,24,0.8) 100%)",
-                fontSize: "clamp(18px, 3vw, 26px)",
-                letterSpacing: 0.4,
-                fontWeight: 700,
-              }}
-            >
-              Muy pronto veras tus resultados
-            </div>
           </div>
         </div>
       );
@@ -392,6 +372,10 @@ export default function Dashboard() {
 
     if (activeSection === "formularios") {
       return <DashboardMain palette={palette} />;
+    }
+
+    if (activeSection === "expedientes") {
+      return <ExpedientesMain palette={palette} />;
     }
 
     return (
@@ -466,6 +450,7 @@ export default function Dashboard() {
             {[
               { key: "dashboard", label: "Dashboard" },
               { key: "formularios", label: "Formularios" },
+              { key: "expedientes", label: "Expedientes" },
               { key: "chat", label: "Chat" },
             ].map((item) => {
               const isActive = activeSection === item.key;
@@ -629,9 +614,8 @@ export default function Dashboard() {
                         background: isSelected
                           ? "rgba(210,242,82,0.08)"
                           : "rgba(3,23,24,0.85)",
-                        border: `1px solid ${
-                          isSelected ? palette.accent : palette.border
-                        }`,
+                        border: `1px solid ${isSelected ? palette.accent : palette.border
+                          }`,
                         boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
                         display: "flex",
                         flexDirection: "column",
@@ -855,7 +839,7 @@ export default function Dashboard() {
                 aria-expanded={isMenuOpen}
               >
                 <img
-                  src="https://firebasestorage.googleapis.com/v0/b/docseb.firebasestorage.app/o/icons%2Flogo.jpg?alt=media&token=e8a6b9c3-8a0b-4dd6-82ee-7a1eb7fd946e"
+                  src="https://firebasestorage.googleapis.com/v0/b/imadata-demo.firebasestorage.app/o/icons%2Flogo01.png?alt=media&token=25c74df8-1dc7-4fc1-b271-5305656466aa"
                   alt="Perfil demo"
                   style={{
                     width: "100%",

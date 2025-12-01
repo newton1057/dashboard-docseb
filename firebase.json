@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "site": "ima-sebastianarmida",
+    "site": "dashboard-ima-data",
     "public": "dist",
     "ignore": [
       "firebase.json",

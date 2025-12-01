@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import "./chat.css";
 
 const API_URL =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/message";
+  "https://demo-ai-448238488830.northamerica-south1.run.app/modelsAI/message";
 const SESSION_ID_LENGTH = 8;
 const SESSION_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -502,8 +502,8 @@ export default function ChatMain({
       const normalizedSpecificEmail =
         typeValue === "specific"
           ? normalizeEmail(requestEmail) ||
-            normalizeEmail(contextData?.email) ||
-            normalizeEmail(contextData?.info?.email)
+          normalizeEmail(contextData?.email) ||
+          normalizeEmail(contextData?.info?.email)
           : null;
       const filesToSend = [...imagePreviews, ...filePreviews]
         .map((item) => item?.file)
@@ -854,9 +854,9 @@ export default function ChatMain({
                   const placeholderText =
                     !hasText && !hasAttachments
                       ? rawContent ||
-                        (msg.status === "thinking" || msg.status === "typing"
-                          ? "…"
-                          : "")
+                      (msg.status === "thinking" || msg.status === "typing"
+                        ? "…"
+                        : "")
                       : "";
                   const textToRender = hasText ? rawContent : placeholderText;
                   const shouldRenderText = Boolean(textToRender);
@@ -1063,7 +1063,7 @@ export default function ChatMain({
                   marginBottom: 12,
                 }}
               >
-                ¿En qué puedo ayudar, Dr. Sebastián?
+                ¿En qué puedo ayudar?
               </p>
               <p
                 style={{
@@ -1142,137 +1142,137 @@ export default function ChatMain({
           gap: 0,
         }}
       >
-      {(imagePreviews.length > 0 || filePreviews.length > 0) && (
+        {(imagePreviews.length > 0 || filePreviews.length > 0) && (
+          <div
+            style={{
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              marginBottom: 12,
+            }}
+          >
+            {imagePreviews.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  position: "relative",
+                  width: 86,
+                  height: 86,
+                  borderRadius: 14,
+                  overflow: "hidden",
+                  border: `1px solid ${palette.border}`,
+                  background: "rgba(255,255,255,0.04)",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
+                }}
+              >
+                <img
+                  src={item.url}
+                  alt={item.name || "imagen seleccionada"}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    display: "block",
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(item.id)}
+                  aria-label="Eliminar imagen"
+                  style={{
+                    position: "absolute",
+                    top: 6,
+                    right: 6,
+                    width: 24,
+                    height: 24,
+                    minWidth: 24,
+                    minHeight: 24,
+                    aspectRatio: "1 / 1",
+                    borderRadius: "50%",
+                    border: `1px solid ${palette.border}`,
+                    background: "rgba(3,23,24,0.92)",
+                    color: palette.text,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
+                    lineHeight: 1,
+                  }}
+                >
+                  <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
+                </button>
+              </div>
+            ))}
+            {filePreviews.map((item) => (
+              <div
+                key={item.id}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: `1px solid ${palette.border}`,
+                  background: "rgba(255,255,255,0.04)",
+                  boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
+                  color: palette.text,
+                  maxWidth: 240,
+                }}
+              >
+                <FiFileText aria-hidden="true" style={{ fontSize: 18 }} />
+                <div
+                  style={{
+                    flex: 1,
+                    fontSize: 13,
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                  title={item.name}
+                >
+                  {item.name || "Archivo PDF"}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveFile(item.id)}
+                  aria-label="Eliminar archivo"
+                  style={{
+                    width: 24,
+                    height: 24,
+                    minWidth: 24,
+                    minHeight: 24,
+                    aspectRatio: "1 / 1",
+                    borderRadius: "50%",
+                    border: `1px solid ${palette.border}`,
+                    background: "rgba(3,23,24,0.92)",
+                    color: palette.text,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    padding: 0,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    cursor: "pointer",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                >
+                  <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div
           style={{
-            display: "flex",
-            flexWrap: "wrap",
-            gap: 10,
-            marginBottom: 12,
-          }}
-        >
-          {imagePreviews.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                position: "relative",
-                width: 86,
-                height: 86,
-                borderRadius: 14,
-                overflow: "hidden",
-                border: `1px solid ${palette.border}`,
-                background: "rgba(255,255,255,0.04)",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
-              }}
-            >
-              <img
-                src={item.url}
-                alt={item.name || "imagen seleccionada"}
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  display: "block",
-                }}
-              />
-              <button
-                type="button"
-                onClick={() => handleRemoveImage(item.id)}
-                aria-label="Eliminar imagen"
-                style={{
-                  position: "absolute",
-                  top: 6,
-                  right: 6,
-                  width: 24,
-                  height: 24,
-                  minWidth: 24,
-                  minHeight: 24,
-                  aspectRatio: "1 / 1",
-                  borderRadius: "50%",
-                  border: `1px solid ${palette.border}`,
-                  background: "rgba(3,23,24,0.92)",
-                  color: palette.text,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
-                  lineHeight: 1,
-                }}
-              >
-                <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
-              </button>
-            </div>
-          ))}
-          {filePreviews.map((item) => (
-            <div
-              key={item.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: `1px solid ${palette.border}`,
-                background: "rgba(255,255,255,0.04)",
-                boxShadow: "0 10px 25px rgba(0,0,0,0.28)",
-                color: palette.text,
-                maxWidth: 240,
-              }}
-            >
-              <FiFileText aria-hidden="true" style={{ fontSize: 18 }} />
-              <div
-                style={{
-                  flex: 1,
-                  fontSize: 13,
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-                title={item.name}
-              >
-                {item.name || "Archivo PDF"}
-              </div>
-              <button
-                type="button"
-                onClick={() => handleRemoveFile(item.id)}
-                aria-label="Eliminar archivo"
-                style={{
-                  width: 24,
-                  height: 24,
-                  minWidth: 24,
-                  minHeight: 24,
-                  aspectRatio: "1 / 1",
-                  borderRadius: "50%",
-                  border: `1px solid ${palette.border}`,
-                  background: "rgba(3,23,24,0.92)",
-                  color: palette.text,
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 0,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  cursor: "pointer",
-                  boxShadow: "0 4px 10px rgba(0,0,0,0.35)",
-                  flexShrink: 0,
-                  lineHeight: 1,
-                }}
-              >
-                <FiX aria-hidden="true" style={{ fontSize: 13, strokeWidth: 3 }} />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-      <div
-        style={{
-          borderRadius: 28,
-          border: `1px solid ${palette.border}`,
-          background: palette.bg2 || "#0B2A2B",
+            borderRadius: 28,
+            border: `1px solid ${palette.border}`,
+            background: palette.bg2 || "#0B2A2B",
             boxShadow:
               "0 15px 35px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
             padding: "18px 22px",
