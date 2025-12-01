@@ -333,7 +333,7 @@ export default function Dashboard() {
               "radial-gradient(1200px 800px at 20% -120%, rgba(210,242,82,0.18), transparent 65%), linear-gradient(180deg, rgba(3,23,24,0.85) 0%, rgba(3,23,24,0.65) 100%)",
             display: "flex",
             flexDirection: "column",
-            padding: "32px clamp(24px, 4vw, 64px)",
+            padding: 0,
             boxSizing: "border-box",
           }}
         >
@@ -341,7 +341,6 @@ export default function Dashboard() {
             style={{
               flex: 1,
               width: "100%",
-              borderRadius: 24,
               overflow: "hidden",
               border: `1px solid ${palette.border}`,
               boxShadow: "0 25px 60px rgba(0,0,0,0.55)",

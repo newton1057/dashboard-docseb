@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { jsPDF } from "jspdf";
 import Skeleton from "../components/Skeleton";
 
 const RECORDS_ENDPOINT = "https://demo-get-medicalrecords-json-448238488830.northamerica-south1.run.app";
@@ -7,6 +8,18 @@ function EyeIcon({ size = 18, color = "currentColor" }) {
     return (
         <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style={{ display: "block" }}>
             <path d="M12 5C7 5 2.73 8.11 1 12c1.73 3.89 6 7 11 7s9.27-3.11 11-7c-1.73-3.89-6-7-11-7Zm0 11a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm0-2.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" fill={color} />
+        </svg>
+    );
+}
+
+function PrintIcon({ size = 18, color = "currentColor" }) {
+    return (
+        <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" style={{ display: "block" }}>
+            <path
+                d="M7 6h10V4.5A1.5 1.5 0 0 0 15.5 3h-7A1.5 1.5 0 0 0 7 4.5V6ZM7 17.5A1.5 1.5 0 0 0 8.5 19h7a1.5 1.5 0 0 0 1.5-1.5V14H7v3.5ZM6 8.5A1.5 1.5 0 0 0 4.5 10v4A1.5 1.5 0 0 0 6 15.5h1.5V13h9v2.5H18A1.5 1.5 0 0 0 19.5 14v-4A1.5 1.5 0 0 0 18 8.5H6Zm0-1h12A2.5 2.5 0 0 1 20.5 10v4A2.5 2.5 0 0 1 18 16.5h-.5V19a2.5 2.5 0 0 1-2.5 2.5h-7A2.5 2.5 0 0 1 5.5 19v-2.5H6A2.5 2.5 0 0 1 3.5 14v-4A2.5 2.5 0 0 1 6 7.5Z"
+                fill={color}
+            />
+            <circle cx="17" cy="11" r="1" fill={color} />
         </svg>
     );
 }
@@ -57,6 +70,37 @@ const getLatestEncounterReason = (encounters) => {
     }
 
     return "—";
+};
+
+const getPatientName = (patient) => {
+    if (!patient?.name) return "Paciente sin nombre";
+    const given = Array.isArray(patient.name.given) ? patient.name.given.join(" ") : "";
+    const family = patient.name.family || "";
+    const full = `${given} ${family}`.trim();
+    return full || "Paciente sin nombre";
+};
+
+const formatDate = (value) => {
+    if (!value) return "—";
+    const parsed = Date.parse(value);
+    if (Number.isNaN(parsed)) return value;
+    return new Intl.DateTimeFormat("es-ES", { day: "2-digit", month: "short", year: "numeric" }).format(parsed);
+};
+
+const formatPhone = (telecom) => {
+    if (!Array.isArray(telecom)) return "—";
+    const phone = telecom.find((item) => item?.system === "phone" && item?.value)?.value;
+    return phone || "—";
+};
+
+const formatEmergencyContacts = (contacts) => {
+    if (!Array.isArray(contacts) || contacts.length === 0) return ["Sin contactos de emergencia"];
+    return contacts.map((contact) => {
+        const name = contact?.name || "Contacto sin nombre";
+        const relationship = contact?.relationship ? `(${contact.relationship})` : "";
+        const phone = contact?.telecom?.[0]?.value ? ` • ${contact.telecom[0].value}` : "";
+        return `${name} ${relationship}${phone}`.trim();
+    });
 };
 
 export default function ExpedientesMain({ palette }) {
@@ -193,6 +237,619 @@ export default function ExpedientesMain({ palette }) {
             return { left, top, width };
         })()
         : null;
+
+    const handlePrintRecord = (record) => {
+  if (!record) return;
+
+  const accentHex = palette?.accent || "#D2F252";
+  const textMain = "#9fb7ae";
+  const textMuted = "#6f8a84";
+  const dataColor = "#031718";
+  const surfaceDark = "#031718";
+
+  const hexToRgb = (hex) => {
+    const sanitized = String(hex || "").replace("#", "");
+    const expanded =
+      sanitized.length === 3
+        ? sanitized
+            .split("")
+            .map((c) => c + c)
+            .join("")
+        : sanitized;
+
+    const r = parseInt(expanded.slice(0, 2), 16);
+    const g = parseInt(expanded.slice(2, 4), 16);
+    const b = parseInt(expanded.slice(4, 6), 16);
+    return { r, g, b };
+  };
+
+  const mixHex = (hexA, hexB, t = 0.5) => {
+    const a = hexToRgb(hexA);
+    const b = hexToRgb(hexB);
+    const clamp = (n) => Math.max(0, Math.min(255, Math.round(n)));
+    const r = clamp(a.r + (b.r - a.r) * t);
+    const g = clamp(a.g + (b.g - a.g) * t);
+    const b2 = clamp(a.b + (b.b - a.b) * t);
+    return (
+      "#" +
+      [r, g, b2]
+        .map((v) => v.toString(16).padStart(2, "0"))
+        .join("")
+        .toUpperCase()
+    );
+  };
+
+  const setFillHex = (doc, hex) => {
+    const { r, g, b } = hexToRgb(hex);
+    doc.setFillColor(r, g, b);
+  };
+
+  const setDrawHex = (doc, hex) => {
+    const { r, g, b } = hexToRgb(hex);
+    doc.setDrawColor(r, g, b);
+  };
+
+  const normalizeGender = (g) => {
+    const v = String(g || "").toLowerCase().trim();
+    if (v === "male" || v === "m" || v === "masculino") return "Masculino";
+    if (v === "female" || v === "f" || v === "femenino") return "Femenino";
+    if (!v) return "—";
+    return v.charAt(0).toUpperCase() + v.slice(1);
+  };
+
+  const normalizeStatus = (s) => {
+    const v = String(s || "").toLowerCase().trim();
+    if (!v) return "—";
+    const map = {
+      active: "Activo",
+      inactive: "Inactivo",
+      resolved: "Resuelto",
+      remission: "Remisión",
+      completed: "Completado",
+      stopped: "Suspendido",
+    };
+    return map[v] || (v.charAt(0).toUpperCase() + v.slice(1));
+  };
+
+  const doc = new jsPDF();
+
+  const L = {
+    mx: 16,
+    footerH: 16,
+
+    headerFullH: 40,
+    headerCompactH: 22,
+
+    radius: 4,
+    cardPadX: 10,
+    cardPadY: 8,
+    gap: 7,
+    sectionGap: 12,
+    accentBarW: 3,
+  };
+
+  const T = {
+    h1: 16,
+    h2: 12,
+    h3: 10.5,
+    label: 8.6,
+    body: 10,
+    bodySm: 9,
+  };
+
+  const LH = {
+    sm: 4.4,
+    md: 5.2,
+  };
+
+  const accentRgb = hexToRgb(accentHex);
+  const headerRgb = hexToRgb(surfaceDark);
+
+  const cardBg = mixHex(surfaceDark, "#FFFFFF", 0.94);
+  const cardStroke = mixHex(surfaceDark, "#FFFFFF", 0.82);
+  const divider = mixHex(surfaceDark, "#FFFFFF", 0.78);
+
+  let pageWidth = doc.internal.pageSize.getWidth();
+  let pageHeight = doc.internal.pageSize.getHeight();
+
+  let pageNumber = 1;
+  let currentHeaderMode = "full"; // "full" | "compact"
+  let y = 52; // se recalcula por header
+
+  const refreshDimensions = () => {
+    pageWidth = doc.internal.pageSize.getWidth();
+    pageHeight = doc.internal.pageSize.getHeight();
+  };
+
+  const contentWidth = () => pageWidth - L.mx * 2;
+
+  const getStartYByHeaderMode = (mode) => (mode === "compact" ? 34 : 52);
+
+  const drawCard = (x, y0, w, h, { accentLeft = true } = {}) => {
+    setFillHex(doc, cardBg);
+    setDrawHex(doc, cardStroke);
+    doc.setLineWidth(0.35);
+    doc.roundedRect(x, y0, w, h, L.radius, L.radius, "FD");
+
+    if (accentLeft) {
+      setFillHex(doc, accentHex);
+      doc.rect(x, y0, L.accentBarW, h, "F");
+    }
+  };
+
+  const drawPill = (text, xRight, yTop, { paddingX = 3, h = 6.5 } = {}) => {
+    const label = String(text || "");
+    if (!label || label === "—") return;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.6);
+    const w = doc.getTextWidth(label) + paddingX * 2;
+
+    setDrawHex(doc, mixHex(accentHex, "#FFFFFF", 0.18));
+    doc.setLineWidth(0.35);
+    doc.roundedRect(xRight - w, yTop, w, h, 2.2, 2.2, "S");
+
+    doc.setTextColor(textMuted);
+    doc.text(label, xRight - w + paddingX, yTop + 4.9);
+  };
+
+  const splitWithNewlines = (text, width) => {
+    const raw = String(text || "").split("\n");
+    const out = [];
+    raw.forEach((p) => {
+      const t = String(p || "").trim();
+      if (!t) return;
+      const lines = doc.splitTextToSize(t, width);
+      lines.forEach((ln) => out.push(String(ln)));
+    });
+    return out.length ? out : ["—"];
+  };
+
+  const addFooter = () => {
+    const patientName = getPatientName(record.patient);
+    const patientId = record?.patient?.patient_id || "—";
+    const left = `${patientName} · ${patientId}`;
+
+    setDrawHex(doc, mixHex(accentHex, "#FFFFFF", 0.2));
+    doc.setLineWidth(0.45);
+    doc.line(L.mx, pageHeight - L.footerH, pageWidth - L.mx, pageHeight - L.footerH);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8.8);
+    doc.setTextColor(textMuted);
+    doc.text(left, L.mx, pageHeight - 8.5);
+
+    doc.setFontSize(9);
+    doc.text(`Página ${pageNumber}`, pageWidth - L.mx, pageHeight - 8.5, { align: "right" });
+  };
+
+  const addHeader = (mode = "full") => {
+    currentHeaderMode = mode;
+
+    const patientName = getPatientName(record.patient);
+    const patientId = record?.patient?.patient_id || "—";
+    const generatedDate = new Date().toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const H = mode === "compact" ? L.headerCompactH : L.headerFullH;
+
+    doc.setFillColor(headerRgb.r, headerRgb.g, headerRgb.b);
+    doc.rect(0, 0, pageWidth, H, "F");
+
+    doc.setFillColor(accentRgb.r, accentRgb.g, accentRgb.b);
+    doc.rect(0, H, pageWidth, 2, "F");
+
+    if (mode === "full") {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(T.h1);
+      doc.setTextColor(accentHex);
+      doc.text("Expediente médico", L.mx, 18);
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(textMain);
+      doc.text(patientName, L.mx, 28);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textMuted);
+      doc.text(`Generado el ${generatedDate}`, pageWidth - L.mx, 20, { align: "right" });
+
+      const chipText = `ID: ${patientId}`;
+      doc.setFontSize(9);
+      const chipPadX = 3;
+      const chipH = 6.5;
+      const chipW = doc.getTextWidth(chipText) + chipPadX * 2;
+      const chipX = L.mx;
+      const chipY = 31;
+
+      setDrawHex(doc, mixHex(accentHex, "#FFFFFF", 0.15));
+      doc.setLineWidth(0.35);
+      doc.roundedRect(chipX, chipY, chipW, chipH, 2.2, 2.2, "S");
+      doc.setTextColor(textMuted);
+      doc.text(chipText, chipX + chipPadX, chipY + 4.9);
+    } else {
+      // header compacto (páginas 2+)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10.8);
+      doc.setTextColor(textMain);
+      doc.text(patientName, L.mx, 14);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textMuted);
+      doc.text(`ID: ${patientId}`, L.mx, 19);
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textMuted);
+      doc.text(`Generado el ${generatedDate}`, pageWidth - L.mx, 14, { align: "right" });
+    }
+
+    y = getStartYByHeaderMode(mode);
+  };
+
+  const ensureSpace = (heightNeeded) => {
+    const bottomLimit = pageHeight - (L.footerH + 6);
+    if (y + heightNeeded > bottomLimit) {
+      addFooter();
+      doc.addPage();
+      refreshDimensions();
+      pageNumber += 1;
+      addHeader("compact");
+    }
+  };
+
+  const addSectionTitle = (title, subtitle) => {
+    // Widow control: título + mínimo 1 card (aprox) deben caber
+    const titleBlockH = 20;
+    const minNext = 28;
+    if (y > getStartYByHeaderMode(currentHeaderMode)) y += L.sectionGap;
+    ensureSpace(titleBlockH + minNext);
+
+    setFillHex(doc, accentHex);
+    doc.rect(L.mx, y - 4.5, L.accentBarW, 8, "F");
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.h2);
+    doc.setTextColor(dataColor);
+    doc.text(String(title || "").toUpperCase(), L.mx + L.accentBarW + 4, y);
+
+    if (subtitle) {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(textMuted);
+      doc.text(subtitle, L.mx + L.accentBarW + 4, y + 5);
+      y += 11;
+    } else {
+      y += 8.5;
+    }
+
+    setDrawHex(doc, divider);
+    doc.setLineWidth(0.25);
+    doc.line(L.mx, y, pageWidth - L.mx, y);
+    y += 6;
+  };
+
+  const addFieldCard = (label, value) => {
+    const safeLabel = String(label || "");
+    const safeValue = value ? String(value) : "—";
+
+    const innerW = contentWidth() - L.cardPadX * 2 - L.accentBarW;
+    const valueLines = splitWithNewlines(safeValue, innerW);
+
+    const h =
+      L.cardPadY +
+      LH.sm +
+      1.5 +
+      valueLines.length * LH.md +
+      L.cardPadY;
+
+    ensureSpace(h + L.gap);
+    drawCard(L.mx, y, contentWidth(), h, { accentLeft: true });
+
+    const textX = L.mx + L.accentBarW + L.cardPadX;
+    const labelY = y + L.cardPadY + LH.sm;
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(T.label);
+    doc.setTextColor(textMuted);
+    doc.text(safeLabel, textX, labelY);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.body);
+    doc.setTextColor(dataColor);
+    doc.text(valueLines, textX, labelY + 5.2);
+
+    y += h + L.gap;
+  };
+
+  const addGridCard = (pairs, columns = 2) => {
+    const cleanPairs = Array.isArray(pairs) ? pairs.filter((p) => p && p.label) : [];
+    if (!cleanPairs.length) return;
+
+    const w = contentWidth();
+    const x0 = L.mx;
+
+    const innerX = x0 + L.accentBarW + L.cardPadX;
+    const innerW = w - L.accentBarW - L.cardPadX * 2;
+
+    const colGap = 8;
+    const colW = (innerW - colGap * (columns - 1)) / columns;
+
+    const rows = [];
+    for (let i = 0; i < cleanPairs.length; i += columns) {
+      const row = cleanPairs.slice(i, i + columns);
+      const measured = row.map((cell) => {
+        const v = cell.value ? String(cell.value) : "—";
+        const vLines = splitWithNewlines(v, colW);
+        const cellH = LH.sm + 1.5 + vLines.length * LH.md;
+        return { ...cell, vLines, cellH };
+      });
+      rows.push({ cells: measured, rowH: Math.max(...measured.map((m) => m.cellH)) });
+    }
+
+    const h =
+      L.cardPadY +
+      rows.reduce((sum, r) => sum + r.rowH, 0) +
+      (rows.length - 1) * 4 +
+      L.cardPadY;
+
+    ensureSpace(h + L.gap);
+    drawCard(x0, y, w, h, { accentLeft: true });
+
+    let cy = y + L.cardPadY;
+
+    rows.forEach((r) => {
+      r.cells.forEach((cell, idx) => {
+        const cx = innerX + idx * (colW + colGap);
+        const labelY = cy + LH.sm;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(T.label);
+        doc.setTextColor(textMuted);
+        doc.text(String(cell.label), cx, labelY);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(T.bodySm);
+        doc.setTextColor(dataColor);
+        doc.text(cell.vLines, cx, labelY + 5.2);
+      });
+
+      cy += r.rowH + 4;
+    });
+
+    y += h + L.gap;
+  };
+
+  const addListItemCard = ({ title, metaRight, lines = [] }) => {
+    const safeTitle = String(title || "Detalle");
+    const w = contentWidth();
+    const x0 = L.mx;
+
+    const innerX = x0 + L.accentBarW + L.cardPadX;
+    const innerW = w - L.accentBarW - L.cardPadX * 2;
+
+    // bullets
+    const bulletIndent = 4;
+    const bulletW = innerW - bulletIndent;
+    const prepared = [];
+    (Array.isArray(lines) ? lines : [String(lines || "—")]).forEach((ln) => {
+      const wraps = splitWithNewlines(String(ln || "").trim(), bulletW);
+      wraps.forEach((wln, i) => {
+        prepared.push({ text: wln, isFirst: i === 0 });
+      });
+    });
+
+    const bodyLineCount = Math.max(1, prepared.length);
+    const h =
+      L.cardPadY +
+      LH.md + // title line
+      3 +
+      bodyLineCount * LH.md +
+      L.cardPadY;
+
+    ensureSpace(h + L.gap);
+    drawCard(x0, y, w, h, { accentLeft: true });
+
+    const titleY = y + L.cardPadY + LH.md;
+
+    // Title left
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(T.h3);
+    doc.setTextColor(dataColor);
+    doc.text(safeTitle, innerX, titleY);
+
+    // Meta pill right (status / fecha)
+    drawPill(metaRight, x0 + w - L.cardPadX, y + L.cardPadY - 0.5);
+
+    // Body bullets
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(T.bodySm);
+    doc.setTextColor(textMain);
+
+    let by = titleY + 6.2;
+    prepared.forEach((p) => {
+      // bullet only for the first wrapped line of each bullet item
+      if (p.isFirst) {
+        doc.text("•", innerX, by);
+        doc.text(p.text, innerX + bulletIndent, by);
+      } else {
+        doc.text(p.text, innerX + bulletIndent, by);
+      }
+      by += LH.md;
+    });
+
+    y += h + L.gap;
+  };
+
+  const addListCards = (items, emptyMessage = "Sin información") => {
+    if (!items || items.length === 0) {
+      addFieldCard("Sin datos", emptyMessage);
+      return;
+    }
+    items.forEach((item) => {
+      addListItemCard({
+        title: item?.title || "Detalle",
+        metaRight: item?.metaRight || "",
+        lines: item?.lines || [item?.body || "—"],
+      });
+    });
+  };
+
+  // ========= Render =========
+  addHeader("full");
+
+  const patientName = getPatientName(record.patient);
+  const doctorName = record.patient?.primary_care_provider?.name || "—";
+  const mainReason = getLatestEncounterReason(record.prior_encounters);
+  const mainDiagnosis = record.diagnoses?.[0]?.code?.display || "—";
+
+  // Resumen
+  addSectionTitle("Resumen", "Datos clave del expediente");
+  addGridCard(
+    [
+      { label: "Paciente", value: patientName },
+      { label: "Médico tratante", value: doctorName },
+    ],
+    2
+  );
+  addFieldCard("Motivo de consulta", mainReason);
+  addFieldCard("Diagnóstico principal", mainDiagnosis);
+
+  // Datos del paciente
+  addSectionTitle("Datos del paciente", "Identificación y contacto");
+  addGridCard(
+    [
+      { label: "ID de paciente", value: record.patient?.patient_id || "—" },
+      { label: "Fecha de nacimiento", value: formatDate(record.patient?.birth_date) },
+      { label: "Género", value: normalizeGender(record.patient?.gender) },
+      { label: "Teléfono", value: formatPhone(record.patient?.telecom) },
+    ],
+    2
+  );
+
+  // Contactos de emergencia
+  const emergencyContacts = formatEmergencyContacts(record.patient?.emergency_contact);
+  addSectionTitle("Contacto de emergencia");
+  addListCards(
+    emergencyContacts.map((value, index) => ({
+      title: `Contacto ${index + 1}`,
+      metaRight: "",
+      lines: splitWithNewlines(value, contentWidth() - 36),
+    })),
+    "No hay contactos de emergencia registrados."
+  );
+
+  // Diagnósticos
+  const diagnosesList = Array.isArray(record.diagnoses) ? record.diagnoses : [];
+  addSectionTitle("Diagnósticos activos");
+  addListCards(
+    diagnosesList.map((dx, index) => {
+      const title = dx?.code?.display || `Diagnóstico ${index + 1}`;
+      const status = normalizeStatus(dx?.clinical_status);
+      const date = dx?.recorded_date ? formatDate(dx.recorded_date) : "";
+      const metaRight = status && status !== "—" ? status : date;
+
+      const lines = [
+        dx?.recorded_date ? `Registrado: ${formatDate(dx.recorded_date)}` : null,
+        dx?.clinical_status ? `Estado: ${normalizeStatus(dx.clinical_status)}` : null,
+        dx?.notes ? `Notas: ${dx.notes}` : null,
+      ].filter(Boolean);
+
+      return { title, metaRight, lines: lines.length ? lines : ["—"] };
+    }),
+    "No hay diagnósticos activos registrados."
+  );
+
+  // Medicamentos
+  const medications = Array.isArray(record.medications?.active) ? record.medications.active : [];
+  addSectionTitle("Medicamentos");
+  addListCards(
+    medications.map((med, index) => {
+      const title = med?.medication?.display || `Medicamento ${index + 1}`;
+      const instr = med?.dosage_instructions?.[0]?.text || "";
+      const status = normalizeStatus(med?.status);
+      const metaRight = status && status !== "—" ? status : "";
+
+      const lines = [
+        instr ? `Indicaciones: ${instr}` : null,
+        med?.authored_on ? `Prescrito: ${formatDate(med.authored_on)}` : null,
+        med?.requester?.display ? `Indicado por: ${med.requester.display}` : null,
+      ].filter(Boolean);
+
+      return {
+        title,
+        metaRight,
+        lines: lines.length ? lines : ["Sin instrucciones registradas."],
+      };
+    }),
+    "No hay medicamentos activos registrados."
+  );
+
+  // Antecedentes (sub-cards)
+  addSectionTitle("Antecedentes");
+
+  const allergies = Array.isArray(record.antecedents?.allergies)
+    ? record.antecedents.allergies.map((a) => {
+        const manifestations = Array.isArray(a?.reaction?.[0]?.manifestation)
+          ? a.reaction[0].manifestation.join(", ")
+          : "";
+        return `${a?.substance?.display || "Alergia"}${
+          manifestations ? ` (${manifestations})` : ""
+        }`;
+      })
+    : [];
+
+  const surgical = Array.isArray(record.antecedents?.surgical_history)
+    ? record.antecedents.surgical_history.map(
+        (s) => `${s?.procedure || "Procedimiento"}${s?.date ? ` — ${formatDate(s.date)}` : ""}`
+      )
+    : [];
+
+  const family = Array.isArray(record.antecedents?.family_history)
+    ? record.antecedents.family_history.map(
+        (f) => `${f?.relative || "Familiar"}: ${f?.condition || "—"}`
+      )
+    : [];
+
+  const anyAntecedents = allergies.length || surgical.length || family.length;
+
+  if (!anyAntecedents) {
+    addFieldCard("Resumen de antecedentes", "No se registran antecedentes.");
+  } else {
+    if (allergies.length) {
+      addListItemCard({
+        title: "Alergias",
+        metaRight: `${allergies.length}`,
+        lines: allergies,
+      });
+    }
+    if (surgical.length) {
+      addListItemCard({
+        title: "Antecedentes quirúrgicos",
+        metaRight: `${surgical.length}`,
+        lines: surgical,
+      });
+    }
+    if (family.length) {
+      addListItemCard({
+        title: "Antecedentes familiares",
+        metaRight: `${family.length}`,
+        lines: family,
+      });
+    }
+  }
+
+  addFooter();
+
+  const normalizedName = patientName.replace(/\s+/g, "_").toLowerCase();
+  doc.save(`expediente-${normalizedName || record.id || "paciente"}.pdf`);
+};
+
+
 
     // Styles
     const thStyle = (textAlign = "left") => ({
@@ -434,6 +1091,32 @@ export default function ExpedientesMain({ palette }) {
                         onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                     >
                         <EyeIcon size={16} /> Ver detalles
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            handlePrintRecord(openRowMenu.rowData);
+                            setOpenRowMenu(null);
+                        }}
+                        style={{
+                            width: "100%",
+                            border: "none",
+                            background: "transparent",
+                            color: palette.text,
+                            textAlign: "left",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            padding: "8px 10px",
+                            borderRadius: 8,
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 8,
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                    >
+                        <PrintIcon size={16} /> Imprimir
                     </button>
                 </div>
             )}
