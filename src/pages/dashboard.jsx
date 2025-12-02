@@ -669,7 +669,7 @@ const controlActiveSurface =
               gap: 10,
             }}
           >
-            <ButterflyIcon width="28px" />
+            <ButterflyIcon width="28px" appearance={resolvedAppearance} />
           </div>
 
           <div

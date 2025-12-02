@@ -1044,6 +1044,8 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
     return list.map((qa, idx) => {
       const prev = list[idx - 1];
       const showSection = qa.sectionMeta && qa.sectionMeta !== prev?.sectionMeta;
+      const sectionBackground = isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.35)";
+      const cardBackground = isLight ? "rgba(255,255,255,0.94)" : "rgba(3,23,24,0.55)";
       return (
         <div key={`${qa.id}-${idx}`} style={{ display: "grid", gap: 6 }}>
           {showSection && (
@@ -1052,7 +1054,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 border: `1px dashed ${palette.border}`,
                 borderRadius: 10,
                 padding: "8px 10px",
-                background: "rgba(3,23,24,0.35)",
+                background: sectionBackground,
               }}
             >
               <div style={{ fontSize: 12, fontWeight: 800, color: palette.text }}>{qa.sectionMeta.title}</div>
@@ -1062,7 +1064,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
           <div
             style={{
               border: `1px solid ${palette.border}`,
-              background: "rgba(3,23,24,0.55)",
+              background: cardBackground,
               borderRadius: 10,
               padding: "10px 12px",
               display: "grid",
@@ -1363,8 +1365,8 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(2px)",
+            background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(6px)",
             display: "grid",
             placeItems: "center",
             zIndex: 9999,
@@ -1377,9 +1379,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
             style={{
               width: "50vw",
               border: `1px solid ${palette.border}`,
-              background: palette.surface,
-              borderRadius: 14,
-              boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+              background: isLight ? "rgba(255,255,255,0.96)" : palette.surface,
+              borderRadius: 16,
+              boxShadow: isLight ? "0 24px 70px rgba(0,0,0,0.22)" : "0 24px 80px rgba(0,0,0,0.5)",
               overflow: "hidden",
               boxSizing: "border-box",
             }}
@@ -1393,7 +1395,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 gap: 12,
                 padding: "14px 16px",
                 borderBottom: `1px solid ${palette.border}`,
-                background: "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
+                background: isLight
+                  ? "linear-gradient(180deg, rgba(14,36,27,0.08), rgba(14,36,27,0.04))"
+                  : "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
               }}
             >
               <h3 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: palette.text }}>
@@ -1405,19 +1409,19 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 onClick={() => setOpen(false)}
                 aria-label="Cerrar"
                 style={{
-                  width: 36,
-                  height: 36,
-                  display: "grid",
-                  placeItems: "center",
-                  border: `1px solid ${palette.border}`,
-                  borderRadius: 10,
-                  background: "rgba(3,23,24,0.55)",
-                  color: palette.text,
-                  cursor: "pointer",
-                  padding: 0,
-                  transition: "transform .06s, background .15s, color .15s, box-shadow .15s",
-                }}
-                onMouseEnter={(e) => {
+                width: 36,
+                height: 36,
+                display: "grid",
+                placeItems: "center",
+                border: `1px solid ${palette.border}`,
+                borderRadius: 10,
+                background: isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.55)",
+                color: palette.text,
+                cursor: "pointer",
+                padding: 0,
+                transition: "transform .06s, background .15s, color .15s, box-shadow .15s",
+              }}
+              onMouseEnter={(e) => {
                   e.currentTarget.style.background = palette.accent;
                   e.currentTarget.style.color = palette.ink;
                   e.currentTarget.style.boxShadow = "0 0 20px 4px rgba(210, 242, 82, 0.25)";
@@ -1459,15 +1463,17 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                       transition: "transform .06s",
                       ...(isActive
                         ? {
-                          background: palette.accent,
-                          color: palette.ink,
+                          background: isLight ? "#0b2b2b" : palette.accent,
+                          color: isLight ? palette.accent : palette.ink,
                           border: "none",
-                          boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25), inset 0 -2px 0 rgba(0,0,0,0.08)",
+                          boxShadow: isLight
+                            ? "0 8px 20px rgba(11,43,43,0.25)"
+                            : "0 0 30px 6px rgba(210, 242, 82, 0.25), inset 0 -2px 0 rgba(0,0,0,0.08)",
                         }
                         : {
-                          background: "rgba(3,23,24,0.45)",
-                          color: palette.text,
-                          border: `1px solid ${palette.accent}`,
+                          background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.45)",
+                          color: isLight ? "#0b2b2b" : palette.text,
+                          border: `1px solid ${isLight ? "rgba(11,43,43,0.18)" : palette.accent}`,
                         }),
                     }}
                     onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.98)")}
@@ -1488,8 +1494,8 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
               <div
                 style={{
                   border: `1px solid ${palette.border}`,
-                  background: "rgba(3,23,24,0.35)",
-                  color: palette.text,
+                  background: isLight ? "rgba(255,255,255,0.94)" : "rgba(3,23,24,0.35)",
+                  color: isLight ? "#0b2b2b" : palette.text,
                   borderRadius: 10,
                   padding: 12,
                   maxHeight: 140,
@@ -1525,11 +1531,11 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                   padding: "10px 16px",
                   borderRadius: 10,
                   border: "none",
-                  background: palette.accent,
-                  color: palette.ink,
+                  background: isLight ? "#0b2b2b" : palette.accent,
+                  color: isLight ? palette.accent : palette.ink,
                   fontWeight: 800,
                   cursor: "pointer",
-                  boxShadow: "0 0 30px 6px rgba(210, 242, 82, 0.25)",
+                  boxShadow: isLight ? "0 12px 26px rgba(11,43,43,0.25)" : "0 0 30px 6px rgba(210, 242, 82, 0.25)",
                 }}
               >
                 Copiar
@@ -1545,8 +1551,8 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.6)",
-            backdropFilter: "blur(4px)",
+            background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.6)",
+            backdropFilter: "blur(6px)",
             display: "grid",
             placeItems: "center",
             padding: "24px 16px",
@@ -1564,8 +1570,10 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
               borderRadius: 22,
               border: `1px solid ${palette.border}`,
               overflow: "hidden",
-              boxShadow: "0 30px 120px rgba(0,0,0,0.55)",
-              background: "rgba(3,23,24,0.9)",
+              boxShadow: isLight ? "0 30px 90px rgba(0,0,0,0.22)" : "0 30px 120px rgba(0,0,0,0.55)",
+              background: isLight
+                ? "linear-gradient(180deg, rgba(255,255,255,0.96), rgba(240,249,227,0.94))"
+                : "rgba(3,23,24,0.9)",
               display: "flex",
               flexDirection: "column",
               position: "relative",
@@ -1578,7 +1586,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 justifyContent: "space-between",
                 padding: "14px 18px",
                 borderBottom: `1px solid ${palette.border}`,
-                background: "linear-gradient(180deg, rgba(3,23,24,0.65), rgba(3,23,24,0.35))",
+                background: isLight
+                  ? "linear-gradient(180deg, rgba(14,36,27,0.08), rgba(14,36,27,0.04))"
+                  : "linear-gradient(180deg, rgba(3,23,24,0.65), rgba(3,23,24,0.35))",
                 gap: 12,
               }}
             >
@@ -1602,7 +1612,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                   height: 40,
                   borderRadius: "50%",
                   border: `1px solid ${palette.border}`,
-                  background: "rgba(3,23,24,0.65)",
+                  background: isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.65)",
                   color: palette.text,
                   cursor: "pointer",
                   fontSize: 18,
@@ -1644,6 +1654,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
               >
                 <ChatMain
                   palette={palette}
+                  appearance={appearance}
                   contextData={chatContextData}
                   requestType="specific"
                   requestEmail={chatPatientEmail}
@@ -1662,8 +1673,8 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
           style={{
             position: "fixed",
             inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(2px)",
+            background: isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.45)",
+            backdropFilter: "blur(6px)",
             display: "grid",
             placeItems: "center",
             zIndex: 10000,
@@ -1677,9 +1688,11 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
               width: "520px",
               maxWidth: "90vw",
               border: `1px solid ${palette.border}`,
-              background: palette.surface,
-              borderRadius: 14,
-              boxShadow: "0 24px 80px rgba(0,0,0,0.5)",
+              background: isLight ? "rgba(255,255,255,0.96)" : palette.surface,
+              borderRadius: 18,
+              boxShadow: isLight
+                ? "0 24px 60px rgba(0,0,0,0.18)"
+                : "0 24px 80px rgba(0,0,0,0.5)",
               overflow: "hidden",
               boxSizing: "border-box",
             }}
@@ -1692,7 +1705,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 gap: 12,
                 padding: "14px 16px",
                 borderBottom: `1px solid ${palette.border}`,
-                background: "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
+                background: isLight
+                  ? "linear-gradient(180deg, rgba(14,36,27,0.08), rgba(14,36,27,0.04))"
+                  : "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
               }}
             >
               <div style={{ display: "grid", gap: 2 }}>
@@ -1716,7 +1731,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                   placeItems: "center",
                   border: `1px solid ${palette.border}`,
                   borderRadius: 10,
-                  background: "rgba(3,23,24,0.55)",
+                  background: isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.55)",
                   color: palette.text,
                   cursor: "pointer",
                   padding: 0,
@@ -1746,10 +1761,12 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                       padding: "6px 12px",
                       fontSize: 12,
                       fontWeight: 700,
-                      background: palette.accent,
-                      color: palette.ink,
+                      background: isLight ? "#0b2b2b" : palette.accent,
+                      color: isLight ? palette.accent : palette.ink,
                       cursor: "pointer",
-                      boxShadow: "0 0 18px 4px rgba(210, 242, 82, 0.25)",
+                      boxShadow: isLight
+                        ? "0 10px 24px rgba(11,43,43,0.2)"
+                        : "0 0 18px 4px rgba(210, 242, 82, 0.25)",
                     }}
                   >
                     Históricos
@@ -1761,7 +1778,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 <div
                   style={{
                     border: `1px solid ${palette.border}`,
-                    background: "rgba(3,23,24,0.55)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.55)",
                     borderRadius: 10,
                     padding: "12px 14px",
                     display: "grid",
@@ -1771,7 +1788,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                   <div style={{ fontSize: 12, fontWeight: 700, color: palette.text }}>Puntuación IKDC</div>
                   {formDetailModal.scoreSummary.valid ? (
                     <>
-                      <div style={{ fontSize: 28, fontWeight: 800, color: palette.accent }}>
+                      <div style={{ fontSize: 28, fontWeight: 800, color: isLight ? "#0b2b2b" : palette.accent }}>
                         {formDetailModal.scoreSummary.score}
                         <span style={{ fontSize: 14, color: palette.text }}> / 100</span>
                       </div>
@@ -1791,7 +1808,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 <div
                   style={{
                     border: `1px solid ${palette.border}`,
-                    background: "rgba(3,23,24,0.55)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.55)",
                     borderRadius: 10,
                     padding: "12px 14px",
                     display: "grid",
@@ -1874,7 +1891,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 <div
                   style={{
                     border: `1px solid ${palette.border}`,
-                    background: "rgba(3,23,24,0.55)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.55)",
                     borderRadius: 10,
                     padding: "12px 14px",
                     display: "grid",
@@ -1929,7 +1946,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 <div
                   style={{
                     border: `1px solid ${palette.border}`,
-                    background: "rgba(3,23,24,0.55)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.55)",
                     borderRadius: 10,
                     padding: "12px 14px",
                     display: "grid",
@@ -1979,7 +1996,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 <div
                   style={{
                     border: `1px solid ${palette.border}`,
-                    background: "rgba(3,23,24,0.55)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.55)",
                     borderRadius: 10,
                     padding: "12px 14px",
                     display: "grid",
