@@ -45,7 +45,7 @@
 .chat-markdown {
   font-size: 14px;
   line-height: 1.7;
-  color: rgba(233, 255, 208, 0.95);
+  color: var(--markdown-color, rgba(233, 255, 208, 0.95));
 }
 
 .chat-markdown > :last-child {
@@ -62,7 +62,7 @@
 .chat-markdown h4 {
   margin: 0 0 0.75em;
   font-weight: 600;
-  color: #f8ffcf;
+  color: var(--markdown-heading, #f8ffcf);
 }
 
 .chat-markdown ul,
@@ -76,14 +76,14 @@
 }
 
 .chat-markdown strong {
-  color: #f1ff9f;
+  color: var(--markdown-strong, #f1ff9f);
 }
 
 .chat-markdown blockquote {
   margin: 0 0 0.85em;
   padding-left: 1em;
   border-left: 2px solid rgba(210, 242, 82, 0.35);
-  color: rgba(233, 255, 208, 0.75);
+  color: var(--markdown-muted, rgba(233, 255, 208, 0.75));
 }
 
 .chat-markdown code {

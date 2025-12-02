@@ -231,6 +231,7 @@ const normalizeEmail = (value) => {
 
 export default function ChatMain({
   palette,
+  appearance = "Oscuro",
   contextData = null,
   sessionIdOverride = null,
   initialHistory = null,
@@ -717,6 +718,36 @@ export default function ChatMain({
   const inputContainerMargin = hasMessages
     ? `-${inputOverlapOffset}px auto 0`
     : "0 auto";
+  const isLight = appearance === "Claro";
+  const chatBackground = isLight
+    ? "radial-gradient(1200px 800px at 20% -120%, rgba(58,92,47,0.16), transparent 65%), linear-gradient(180deg, rgba(255,255,255,0.9) 0%, rgba(232,244,217,0.86) 100%)"
+    : "radial-gradient(1200px 800px at 20% -120%, rgba(210,242,82,0.18), transparent 65%), linear-gradient(180deg, rgba(3,23,24,0.85) 0%, rgba(3,23,24,0.65) 100%)";
+  const heroTitleColor = isLight ? "#0b2b2b" : palette.text;
+  const heroSubtitleColor = isLight ? "rgba(11,43,43,0.7)" : "rgba(233,255,208,0.7)";
+  const promptCardBg = isLight ? "rgba(255,255,255,0.82)" : "rgba(255,255,255,0.05)";
+  const promptCardBorder = isLight ? "rgba(14,36,27,0.12)" : palette.border;
+  const promptTitleColor = isLight ? "#0b2b2b" : "rgba(233,255,208,0.75)";
+  const promptTextColor = isLight ? "rgba(11,43,43,0.7)" : "rgba(233,255,208,0.85)";
+  const inputBackground = isLight ? "linear-gradient(135deg, rgba(255,255,255,0.94), rgba(240,249,227,0.94))" : (palette.bg2 || "#0B2A2B");
+  const inputBorder = isLight ? "rgba(14,36,27,0.14)" : palette.border;
+  const inputShadow = isLight
+    ? "0 18px 45px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.8)"
+    : "0 15px 35px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)";
+  const chatPlaceholder = isLight ? "rgba(11,43,43,0.45)" : "rgba(210, 242, 82, 0.4)";
+  const sendButtonBg = isLight ? "#0b2b2b" : palette.accent;
+  const sendButtonColor = isLight ? palette.accent : palette.ink;
+  const plusButtonBg = isLight ? "#0b2b2b" : palette.accent;
+  const plusButtonColor = isLight ? palette.accent : palette.ink;
+  const userBubbleBg = isLight ? "rgba(11,43,43,0.08)" : "rgba(210,242,82,0.15)";
+  const modelBubbleBg = isLight ? "rgba(255,255,255,0.92)" : "rgba(255,255,255,0.05)";
+  const userBorder = isLight ? "rgba(11,43,43,0.18)" : "rgba(210,242,82,0.35)";
+  const modelBorder = isLight ? "rgba(11,43,43,0.12)" : palette.border;
+  const bubbleTextColor = isLight ? "#0b2b2b" : "rgba(233,255,208,0.92)";
+  const markdownColor = isLight ? "rgba(11,43,43,0.9)" : "rgba(233,255,208,0.95)";
+  const markdownStrong = isLight ? "#0b2b2b" : "#f1ff9f";
+  const markdownHeading = isLight ? "#0b2b2b" : "#f8ffcf";
+  const markdownMuted = isLight ? "rgba(11,43,43,0.65)" : "rgba(233,255,208,0.75)";
+  const bubbleShadow = isLight ? "0 18px 42px rgba(0,0,0,0.16)" : "0 18px 40px rgba(0,0,0,0.32)";
 
   const quickPrompts = [
     {
@@ -750,8 +781,7 @@ export default function ChatMain({
         minHeight: 0,
         flex: 1,
         boxSizing: "border-box",
-        background:
-          "radial-gradient(1200px 800px at 20% -120%, rgba(210,242,82,0.18), transparent 65%), linear-gradient(180deg, rgba(3,23,24,0.85) 0%, rgba(3,23,24,0.65) 100%)",
+        background: chatBackground,
         borderTop: `1px solid ${palette.border}`,
         borderLeft: `1px solid ${palette.border}`,
         color: palette.text,
@@ -830,12 +860,8 @@ export default function ChatMain({
               >
                 {messages.map((msg) => {
                   const isUser = msg.role === "user";
-                  const bubbleColor = isUser
-                    ? "rgba(210,242,82,0.15)"
-                    : "rgba(255,255,255,0.05)";
-                  const borderColor = isUser
-                    ? "rgba(210,242,82,0.35)"
-                    : palette.border;
+                  const bubbleColor = isUser ? userBubbleBg : modelBubbleBg;
+                  const borderColor = isUser ? userBorder : modelBorder;
                   const label = msg.status === "thinking" ? "Pensando..." : "";
                   const typingHint =
                     !isUser && msg.status === "typing"
@@ -886,29 +912,38 @@ export default function ChatMain({
                         style={{
                           maxWidth: "85%",
                           padding: "16px 18px",
-                          borderRadius: 18,
-                          background: bubbleColor,
-                          border: `1px solid ${borderColor}`,
-                          lineHeight: 1.6,
-                          fontSize: 14,
-                          color: "rgba(233,255,208,0.92)",
-                          boxShadow: "0 18px 40px rgba(0,0,0,0.32)",
-                          backdropFilter: "blur(3px)",
-                          WebkitBackdropFilter: "blur(3px)",
-                        }}
-                      >
-                        {shouldRenderText &&
-                          (isUser ? (
-                            <span style={{ whiteSpace: "pre-wrap" }}>
+                        borderRadius: 18,
+                        background: bubbleColor,
+                        border: `1px solid ${borderColor}`,
+                        lineHeight: 1.6,
+                        fontSize: 14,
+                        color: bubbleTextColor,
+                        boxShadow: bubbleShadow,
+                        backdropFilter: "blur(3px)",
+                        WebkitBackdropFilter: "blur(3px)",
+                      }}
+                    >
+                      {shouldRenderText &&
+                        (isUser ? (
+                          <span style={{ whiteSpace: "pre-wrap" }}>
+                            {textToRender}
+                          </span>
+                        ) : (
+                          <div
+                            className="chat-markdown"
+                            style={{
+                              color: markdownColor,
+                              "--markdown-color": markdownColor,
+                              "--markdown-strong": markdownStrong,
+                              "--markdown-heading": markdownHeading,
+                              "--markdown-muted": markdownMuted,
+                            }}
+                          >
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
                               {textToRender}
-                            </span>
-                          ) : (
-                            <div className="chat-markdown">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {textToRender}
-                              </ReactMarkdown>
-                            </div>
-                          ))}
+                            </ReactMarkdown>
+                          </div>
+                        ))}
                         {hasAttachments && (
                           <div
                             style={{
@@ -1061,6 +1096,7 @@ export default function ChatMain({
                   fontSize: "clamp(22px, 4vw, 36px)",
                   fontWeight: 700,
                   marginBottom: 12,
+                  color: heroTitleColor,
                 }}
               >
                 ¿En qué puedo ayudar?
@@ -1068,7 +1104,7 @@ export default function ChatMain({
               <p
                 style={{
                   fontSize: 14,
-                  color: "rgba(233,255,208,0.7)",
+                  color: heroSubtitleColor,
                   maxWidth: 620,
                   margin: "0 auto",
                   lineHeight: 1.2,
@@ -1094,13 +1130,13 @@ export default function ChatMain({
                   style={{
                     padding: "20px 18px",
                     borderRadius: 16,
-                    background: "rgba(255,255,255,0.05)",
-                    border: `1px solid ${palette.border}`,
+                    background: promptCardBg,
+                    border: `1px solid ${promptCardBorder}`,
                     textAlign: "left",
                     display: "flex",
                     flexDirection: "column",
                     gap: 8,
-                    boxShadow: "0 15px 40px rgba(0,0,0,0.25)",
+                    boxShadow: isLight ? "0 12px 30px rgba(0,0,0,0.18)" : "0 15px 40px rgba(0,0,0,0.25)",
                   }}
                 >
                   <div
@@ -1108,7 +1144,7 @@ export default function ChatMain({
                       fontSize: 12,
                       textTransform: "uppercase",
                       letterSpacing: 1.2,
-                      color: "rgba(233,255,208,0.75)",
+                      color: promptTitleColor,
                     }}
                   >
                     {item.title}
@@ -1117,7 +1153,7 @@ export default function ChatMain({
                     style={{
                       fontSize: 14,
                       lineHeight: 1.5,
-                      color: "rgba(233,255,208,0.85)",
+                      color: promptTextColor,
                     }}
                   >
                     {item.detail}
@@ -1271,10 +1307,9 @@ export default function ChatMain({
         <div
           style={{
             borderRadius: 28,
-            border: `1px solid ${palette.border}`,
-            background: palette.bg2 || "#0B2A2B",
-            boxShadow:
-              "0 15px 35px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05)",
+            border: `1px solid ${inputBorder}`,
+            background: inputBackground,
+            boxShadow: inputShadow,
             padding: "18px 22px",
             display: "flex",
             alignItems: "center",
@@ -1318,14 +1353,16 @@ export default function ChatMain({
                 border: "none",
                 aspectRatio: "1 / 1",
                 padding: 0,
-                background: palette.accent,
-                color: palette.ink,
+                background: plusButtonBg,
+                color: plusButtonColor,
                 fontWeight: 700,
                 fontSize: 20,
                 lineHeight: 1,
                 cursor: isThinking ? "not-allowed" : "pointer",
                 opacity: isThinking ? 0.5 : 1,
-                boxShadow: "0 10px 25px rgba(210,242,82,0.35)",
+                boxShadow: isLight
+                  ? "0 10px 24px rgba(11,43,43,0.25)"
+                  : "0 10px 25px rgba(210,242,82,0.35)",
                 transition: "opacity 0.2s ease",
                 display: "flex",
                 alignItems: "center",
@@ -1413,7 +1450,7 @@ export default function ChatMain({
             className="chat-input"
             placeholder="Pregunta lo que quieras"
             style={{
-              "--chat-placeholder-color": "rgba(210, 242, 82, 0.4)",
+              "--chat-placeholder-color": chatPlaceholder,
               flex: 1,
               background: "transparent",
               border: "none",
@@ -1431,29 +1468,31 @@ export default function ChatMain({
           />
           <button
             type="button"
-            aria-label="enviar prompt"
-            onClick={handleSubmit}
-            disabled={!inputValue.trim() || isThinking}
-            style={{
-              width: 44,
+          aria-label="enviar prompt"
+          onClick={handleSubmit}
+          disabled={!inputValue.trim() || isThinking}
+          style={{
+            width: 44,
               height: 44,
               borderRadius: "50%",
               border: "none",
               aspectRatio: "1 / 1",
               padding: 0,
-              background: palette.accent,
-              color: palette.ink,
-              fontWeight: 700,
-              fontSize: 14,
-              cursor:
-                !inputValue.trim() || isThinking ? "not-allowed" : "pointer",
-              opacity: !inputValue.trim() || isThinking ? 0.5 : 1,
-              boxShadow: "0 10px 25px rgba(210,242,82,0.35)",
-              transition: "opacity 0.2s ease",
-            }}
-          >
-            ↗
-          </button>
+            background: sendButtonBg,
+            color: sendButtonColor,
+            fontWeight: 700,
+            fontSize: 14,
+            cursor:
+              !inputValue.trim() || isThinking ? "not-allowed" : "pointer",
+            opacity: !inputValue.trim() || isThinking ? 0.5 : 1,
+            boxShadow: isLight
+              ? "0 10px 24px rgba(11,43,43,0.25)"
+              : "0 10px 25px rgba(210,242,82,0.35)",
+            transition: "opacity 0.2s ease",
+          }}
+        >
+          ↗
+        </button>
         </div>
       </div>
     </div>

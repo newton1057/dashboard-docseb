@@ -164,7 +164,7 @@ export const ikdcQuestions = [
 
 const IKDC_SCORABLE_COUNT = ikdcQuestions.filter((q) => !q.excludeFromScore).length;
 // Base y rutas
-const BASE_URL = "https://docseb.preguntaleaima.com";
+const BASE_URL = "https://imadata-demo.web.app";
 const ROUTES = {
   IKDC: "/IKDC",
   "LYSHOLM-TEGNER": "/LYSHOLM-TEGNER",
@@ -429,7 +429,7 @@ function DotsIcon({ size = 18, color = "currentColor" }) {
   );
 }
 
-export default function DashboardMain({ palette }) {
+export default function DashboardMain({ palette, appearance = "Oscuro" }) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(new Set());
   const [copyState, setCopyState] = useState("idle");
@@ -447,6 +447,16 @@ export default function DashboardMain({ palette }) {
   const [chatConversationError, setChatConversationError] = useState(null);
   const chatConversationAbortRef = useRef(null);
   const hasSearch = searchTerm.trim() !== "";
+  const isLight = appearance === "Claro";
+
+  const tableBackground = isLight ? "rgba(255,255,255,0.82)" : "rgba(3,23,24,0.30)";
+  const rowBgEven = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.20)";
+  const rowBgOdd = isLight ? "rgba(14,36,27,0.14)" : "rgba(3,23,24,0.30)";
+  const rowMenuBackground = isLight ? "rgba(255,255,255,0.98)" : "rgba(3,23,24,0.95)";
+  const searchBackground = isLight ? "rgba(255,255,255,0.92)" : "rgba(3,23,24,0.65)";
+  const searchBorder = isLight ? "rgba(14,36,27,0.18)" : palette.border;
+  const searchPlaceholder = isLight ? "#0b2b2b" : "rgba(210, 242, 82, 0.5)";
+  const skeletonBackground = isLight ? "rgba(14,36,27,0.12)" : "rgba(255,255,255,0.1)";
 
   const filteredRows = useMemo(() => {
     const term = searchTerm.trim().toLowerCase();
@@ -1095,8 +1105,12 @@ export default function DashboardMain({ palette }) {
               width: 260,
               padding: "10px 12px",
               borderRadius: 10,
-              color: palette.text,
+              color: isLight ? "#0b2b2b" : palette.text,
               fontSize: 13,
+              background: searchBackground,
+              border: `1px solid ${searchBorder}`,
+              boxShadow: isLight ? "0 12px 24px rgba(0,0,0,0.08)" : "none",
+              "--search-placeholder": searchPlaceholder,
             }}
           />
 
@@ -1130,8 +1144,8 @@ export default function DashboardMain({ palette }) {
           border: `1px solid ${palette.border}`,
           borderRadius: 12,
           overflow: "hidden",
-          background: "rgba(3,23,24,0.30)",
-          boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
+          background: tableBackground,
+          boxShadow: isLight ? "0 18px 40px rgba(0,0,0,0.18)" : "0 18px 60px rgba(0,0,0,0.35)",
         }}
       >
         <div style={{ maxHeight: 380, overflow: "auto" }}>
@@ -1165,7 +1179,11 @@ export default function DashboardMain({ palette }) {
                   <tr key={`skeleton-${i}`} style={{ borderBottom: `1px solid ${palette.border}` }}>
                     {TABLE_COLUMNS.map((c) => (
                       <td key={c.key} style={tdStyle(c.key)}>
-                        <Skeleton height={20} borderRadius={4} />
+                        <Skeleton
+                          height={20}
+                          borderRadius={4}
+                          style={{ backgroundColor: skeletonBackground }}
+                        />
                       </td>
                     ))}
                   </tr>
@@ -1199,7 +1217,7 @@ export default function DashboardMain({ palette }) {
                   <tr
                     key={r.id}
                     style={{
-                      background: idx % 2 === 0 ? "rgba(3,23,24,0.20)" : "rgba(3,23,24,0.30)",
+                      background: idx % 2 === 0 ? rowBgEven : rowBgOdd,
                       borderBottom: `1px solid ${palette.border}`,
                     }}
                   >
@@ -1229,7 +1247,7 @@ export default function DashboardMain({ palette }) {
                     <td style={tdStyle("operado")}>
                       <div style={{ display: "grid", placeItems: "center" }}>
                         {r.operado ? (
-                          <CheckIcon color={palette.accent} />
+                          <CheckIcon color={isLight ? "#0b2b2b" : palette.accent} />
                         ) : (
                           <XIcon color={palette.text} />
                         )}
@@ -1259,10 +1277,10 @@ export default function DashboardMain({ palette }) {
                                     placeItems: "center",
                                   }}
                                 >
-                                  <EyeIcon color={palette.accent} />
+                                  <EyeIcon color={isLight ? "#0b2b2b" : palette.accent} />
                                 </button>
                               ) : (
-                                <EyeIcon color={palette.accent} />
+                                <EyeIcon color={isLight ? "#0b2b2b" : palette.accent} />
                               )
                             ) : (
                               <span style={dashStyle}>-</span>
@@ -1290,7 +1308,7 @@ export default function DashboardMain({ palette }) {
                             placeItems: "center",
                           }}
                         >
-                          <DotsIcon color={palette.accent} />
+                          <DotsIcon color={isLight ? "#0b2b2b" : palette.accent} />
                         </button>
                       </div>
                     </td>
@@ -1312,8 +1330,8 @@ export default function DashboardMain({ palette }) {
             padding: 6,
             borderRadius: 10,
             border: `1px solid ${palette.border}`,
-            background: "rgba(3,23,24,0.95)",
-            boxShadow: "0 24px 50px rgba(0,0,0,0.45)",
+            background: rowMenuBackground,
+            boxShadow: isLight ? "0 16px 40px rgba(0,0,0,0.22)" : "0 24px 50px rgba(0,0,0,0.45)",
             zIndex: 50,
           }}
         >

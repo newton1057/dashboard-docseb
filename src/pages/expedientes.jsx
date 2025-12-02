@@ -103,13 +103,29 @@ const formatEmergencyContacts = (contacts) => {
     });
 };
 
-export default function ExpedientesMain({ palette }) {
+export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
     const [rows, setRows] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [detailsModal, setDetailsModal] = useState(null);
     const [openRowMenu, setOpenRowMenu] = useState(null);
+    const isLight = appearance === "Claro";
+    const tableBackground = isLight ? "rgba(255,255,255,0.85)" : "rgba(3,23,24,0.30)";
+    const rowBgEven = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.20)";
+    const rowBgOdd = isLight ? "rgba(14,36,27,0.14)" : "rgba(3,23,24,0.30)";
+    const rowMenuBackground = isLight ? "rgba(255,255,255,0.98)" : "rgba(3,23,24,0.95)";
+    const rowMenuShadow = isLight ? "0 16px 40px rgba(0,0,0,0.22)" : "0 24px 50px rgba(0,0,0,0.45)";
+    const searchBackground = isLight ? "rgba(255,255,255,0.92)" : "rgba(3,23,24,0.65)";
+    const searchBorder = isLight ? "rgba(14,36,27,0.18)" : palette.border;
+    const searchPlaceholder = isLight ? "#0b2b2b" : "rgba(210, 242, 82, 0.5)";
+    const skeletonBackground = isLight ? "rgba(14,36,27,0.12)" : "rgba(255,255,255,0.1)";
+    const overlayBackground = isLight ? "rgba(0,0,0,0.35)" : "rgba(0,0,0,0.6)";
+    const modalBackground = isLight ? "rgba(255,255,255,0.96)" : palette.bg1;
+    const modalHeaderBackground = isLight
+        ? "linear-gradient(180deg, rgba(14,36,27,0.08), rgba(14,36,27,0.04))"
+        : "linear-gradient(180deg, rgba(3,23,24,0.65), rgba(3,23,24,0.35))";
+    const modalCloseBackground = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.65)";
 
     useEffect(() => {
         let active = true;
@@ -915,8 +931,12 @@ export default function ExpedientesMain({ palette }) {
                         width: 260,
                         padding: "10px 12px",
                         borderRadius: 10,
-                        color: palette.text,
+                        color: isLight ? "#0b2b2b" : palette.text,
                         fontSize: 13,
+                        background: searchBackground,
+                        border: `1px solid ${searchBorder}`,
+                        boxShadow: isLight ? "0 12px 24px rgba(0,0,0,0.08)" : "none",
+                        "--search-placeholder": searchPlaceholder,
                     }}
                 />
             </div>
@@ -928,8 +948,8 @@ export default function ExpedientesMain({ palette }) {
                     border: `1px solid ${palette.border}`,
                     borderRadius: 12,
                     overflow: "hidden",
-                    background: "rgba(3,23,24,0.30)",
-                    boxShadow: "0 18px 60px rgba(0,0,0,0.35)",
+                    background: tableBackground,
+                    boxShadow: isLight ? "0 18px 40px rgba(0,0,0,0.18)" : "0 18px 60px rgba(0,0,0,0.35)",
                     flex: 1,
                     display: "flex",
                     flexDirection: "column",
@@ -973,11 +993,11 @@ export default function ExpedientesMain({ palette }) {
                             {loading &&
                                 Array.from({ length: 5 }).map((_, i) => (
                                     <tr key={`skeleton-${i}`} style={{ borderBottom: `1px solid ${palette.border}` }}>
-                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} /></td>
-                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} /></td>
-                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} /></td>
-                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} /></td>
-                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} /></td>
+                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} style={{ backgroundColor: skeletonBackground }} /></td>
+                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} style={{ backgroundColor: skeletonBackground }} /></td>
+                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} style={{ backgroundColor: skeletonBackground }} /></td>
+                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} style={{ backgroundColor: skeletonBackground }} /></td>
+                                        <td style={tdStyle()}><Skeleton height={20} borderRadius={4} style={{ backgroundColor: skeletonBackground }} /></td>
                                     </tr>
                                 ))}
 
@@ -1007,7 +1027,7 @@ export default function ExpedientesMain({ palette }) {
                                     <tr
                                         key={row.id}
                                         style={{
-                                            background: idx % 2 === 0 ? "rgba(3,23,24,0.20)" : "rgba(3,23,24,0.30)",
+                                            background: idx % 2 === 0 ? rowBgEven : rowBgOdd,
                                             borderBottom: `1px solid ${palette.border}`,
                                         }}
                                     >
@@ -1032,13 +1052,13 @@ export default function ExpedientesMain({ palette }) {
                                                         background: "transparent",
                                                         border: "none",
                                                         cursor: "pointer",
-                                                        color: palette.textMuted,
+                                                        color: isLight ? "#0b2b2b" : palette.textMuted,
                                                         padding: 0,
                                                         display: "grid",
                                                         placeItems: "center",
                                                     }}
                                                 >
-                                                    <DotsIcon color={palette.accent} />
+                                                    <DotsIcon color={isLight ? "#0b2b2b" : palette.accent} />
                                                 </button>
                                             </div>
                                         </td>
@@ -1062,8 +1082,8 @@ export default function ExpedientesMain({ palette }) {
                         padding: 6,
                         borderRadius: 10,
                         border: `1px solid ${palette.border}`,
-                        background: "rgba(3,23,24,0.95)",
-                        boxShadow: "0 24px 50px rgba(0,0,0,0.45)",
+                        background: rowMenuBackground,
+                        boxShadow: rowMenuShadow,
                         zIndex: 50,
                     }}
                 >
@@ -1127,7 +1147,7 @@ export default function ExpedientesMain({ palette }) {
                     style={{
                         position: "fixed",
                         inset: 0,
-                        background: "rgba(0,0,0,0.6)",
+                        background: overlayBackground,
                         backdropFilter: "blur(4px)",
                         display: "grid",
                         placeItems: "center",
@@ -1137,7 +1157,7 @@ export default function ExpedientesMain({ palette }) {
                 >
                     <div
                         style={{
-                            background: palette.bg1,
+                            background: modalBackground,
                             border: `1px solid ${palette.border}`,
                             borderRadius: 24,
                             width: "100%",
@@ -1156,7 +1176,7 @@ export default function ExpedientesMain({ palette }) {
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "space-between",
-                                background: "linear-gradient(180deg, rgba(3,23,24,0.65), rgba(3,23,24,0.35))",
+                                background: modalHeaderBackground,
                             }}
                         >
                             <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, color: palette.text }}>
@@ -1169,7 +1189,7 @@ export default function ExpedientesMain({ palette }) {
                                     height: 36,
                                     borderRadius: "50%",
                                     border: `1px solid ${palette.border}`,
-                                    background: "rgba(3,23,24,0.65)",
+                                    background: modalCloseBackground,
                                     color: palette.text,
                                     cursor: "pointer",
                                     display: "grid",

@@ -76,6 +76,7 @@
   border: 1px solid rgba(210, 242, 82, 0.35);
   background: linear-gradient(135deg, rgba(3, 23, 24, 0.75), rgba(12, 45, 45, 0.9));
   color: #e9ffd0;
+  --search-placeholder: rgba(210, 242, 82, 0.5);
   box-shadow:
     0 0 0 1px rgba(210, 242, 82, 0.08),
     0 12px 24px rgba(0, 0, 0, 0.35);
@@ -99,5 +100,5 @@
 }
 
 .search-input::placeholder {
-  color: rgba(210, 242, 82, 0.5);
+  color: var(--search-placeholder, rgba(210, 242, 82, 0.5));
 }
