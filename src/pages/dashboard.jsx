@@ -628,7 +628,7 @@ const controlActiveSurface =
       },
     ],
     cuenta: [
-      { key: "email", label: "Correo de sesión", value: "demo@docseb.com" },
+      { key: "email", label: "Correo de sesión", value: "demo@demo.com" },
       { key: "role", label: "Rol", value: "Administrador" },
     ],
   };
