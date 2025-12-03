@@ -1,7 +1,7 @@
 // src/pages/Chat.jsx
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { FiImage, FiFilePlus, FiFileText, FiX } from "react-icons/fi";
+import { FiCopy, FiImage, FiFilePlus, FiFileText, FiX } from "react-icons/fi";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -252,6 +252,7 @@ export default function ChatMain({
   const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [filePreviews, setFilePreviews] = useState([]);
+  const [copiedMessageId, setCopiedMessageId] = useState(null);
   const typingIntervalRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const messagesEndRef = useRef(null);
@@ -286,6 +287,12 @@ export default function ChatMain({
     clearTypingTimeout();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialMessages]);
+
+  useEffect(() => {
+    if (!copiedMessageId) return undefined;
+    const timer = setTimeout(() => setCopiedMessageId(null), 1200);
+    return () => clearTimeout(timer);
+  }, [copiedMessageId]);
 
   useEffect(() => {
     if (sessionIdOverride && sessionIdOverride !== sessionId) {
@@ -748,6 +755,9 @@ export default function ChatMain({
   const markdownHeading = isLight ? "#0b2b2b" : "#f8ffcf";
   const markdownMuted = isLight ? "rgba(11,43,43,0.65)" : "rgba(233,255,208,0.75)";
   const bubbleShadow = isLight ? "0 18px 42px rgba(0,0,0,0.16)" : "0 18px 40px rgba(0,0,0,0.32)";
+  const copyBadgeBg = isLight ? "rgba(11,43,43,0.08)" : "rgba(255,255,255,0.08)";
+  const copyBadgeBorder = isLight ? "rgba(11,43,43,0.15)" : "rgba(255,255,255,0.12)";
+  const copyBadgeColor = isLight ? "#0b2b2b" : palette.text;
 
   const quickPrompts = [
     {
@@ -858,12 +868,13 @@ export default function ChatMain({
                 }}
                 onScroll={handleScroll}
               >
-                {messages.map((msg) => {
-                  const isUser = msg.role === "user";
-                  const bubbleColor = isUser ? userBubbleBg : modelBubbleBg;
-                  const borderColor = isUser ? userBorder : modelBorder;
-                  const label = msg.status === "thinking" ? "Pensando..." : "";
-                  const typingHint =
+                <>
+                  {messages.map((msg) => {
+                    const isUser = msg.role === "user";
+                    const bubbleColor = isUser ? userBubbleBg : modelBubbleBg;
+                    const borderColor = isUser ? userBorder : modelBorder;
+                    const label = msg.status === "thinking" ? "Pensando..." : "";
+                    const typingHint =
                     !isUser && msg.status === "typing"
                       ? label
                         ? " escribe…"
@@ -880,9 +891,9 @@ export default function ChatMain({
                   const placeholderText =
                     !hasText && !hasAttachments
                       ? rawContent ||
-                      (msg.status === "thinking" || msg.status === "typing"
-                        ? "…"
-                        : "")
+                        (msg.status === "thinking" || msg.status === "typing"
+                          ? "…"
+                          : "")
                       : "";
                   const textToRender = hasText ? rawContent : placeholderText;
                   const shouldRenderText = Boolean(textToRender);
@@ -912,38 +923,38 @@ export default function ChatMain({
                         style={{
                           maxWidth: "85%",
                           padding: "16px 18px",
-                        borderRadius: 18,
-                        background: bubbleColor,
-                        border: `1px solid ${borderColor}`,
-                        lineHeight: 1.6,
-                        fontSize: 14,
-                        color: bubbleTextColor,
-                        boxShadow: bubbleShadow,
-                        backdropFilter: "blur(3px)",
-                        WebkitBackdropFilter: "blur(3px)",
-                      }}
-                    >
-                      {shouldRenderText &&
-                        (isUser ? (
-                          <span style={{ whiteSpace: "pre-wrap" }}>
-                            {textToRender}
-                          </span>
-                        ) : (
-                          <div
-                            className="chat-markdown"
-                            style={{
-                              color: markdownColor,
-                              "--markdown-color": markdownColor,
-                              "--markdown-strong": markdownStrong,
-                              "--markdown-heading": markdownHeading,
-                              "--markdown-muted": markdownMuted,
-                            }}
-                          >
-                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          borderRadius: 18,
+                          background: bubbleColor,
+                          border: `1px solid ${borderColor}`,
+                          lineHeight: 1.6,
+                          fontSize: 14,
+                          color: bubbleTextColor,
+                          boxShadow: bubbleShadow,
+                          backdropFilter: "blur(3px)",
+                          WebkitBackdropFilter: "blur(3px)",
+                        }}
+                      >
+                        {shouldRenderText &&
+                          (isUser ? (
+                            <span style={{ whiteSpace: "pre-wrap" }}>
                               {textToRender}
-                            </ReactMarkdown>
-                          </div>
-                        ))}
+                            </span>
+                          ) : (
+                            <div
+                              className="chat-markdown"
+                              style={{
+                                color: markdownColor,
+                                "--markdown-color": markdownColor,
+                                "--markdown-strong": markdownStrong,
+                                "--markdown-heading": markdownHeading,
+                                "--markdown-muted": markdownMuted,
+                              }}
+                            >
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {textToRender}
+                              </ReactMarkdown>
+                            </div>
+                          ))}
                         {hasAttachments && (
                           <div
                             style={{
@@ -1012,6 +1023,7 @@ export default function ChatMain({
                                 );
                               }
 
+                              const fileLabel = "Documento PDF";
                               const fileCard = (
                                 <div
                                   style={{
@@ -1024,8 +1036,9 @@ export default function ChatMain({
                                     background: "rgba(255,255,255,0.04)",
                                     color: palette.text,
                                     boxShadow: commonShadow,
-                                    minWidth: 180,
-                                    maxWidth: 280,
+                                    minWidth: 0,
+                                    width: "fit-content",
+                                    maxWidth: "100%",
                                   }}
                                 >
                                   <FiFileText
@@ -1036,25 +1049,15 @@ export default function ChatMain({
                                     style={{
                                       flex: 1,
                                       fontSize: 13,
+                                      fontWeight: 700,
                                       whiteSpace: "nowrap",
                                       overflow: "hidden",
                                       textOverflow: "ellipsis",
                                     }}
-                                    title={name}
+                                    title={fileLabel}
                                   >
-                                    {name}
+                                    {fileLabel}
                                   </div>
-                                  {hasUrl && (
-                                    <span
-                                      style={{
-                                        fontSize: 12,
-                                        color: "rgba(233,255,208,0.85)",
-                                        whiteSpace: "nowrap",
-                                      }}
-                                    >
-                                      Abrir
-                                    </span>
-                                  )}
                                 </div>
                               );
                               return hasUrl ? (
@@ -1074,11 +1077,59 @@ export default function ChatMain({
                           </div>
                         )}
                       </div>
-                    </div>
-                  );
-                })}
-                <div ref={messagesEndRef} />
-              </div>
+                    {!isUser && shouldRenderText && (
+                      <div style={{ marginTop: 8, display: "flex" }}>
+                        <button
+                          type="button"
+                            onClick={() => {
+                              if (navigator?.clipboard?.writeText) {
+                                navigator.clipboard
+                                  .writeText(textToRender)
+                                  .then(() => setCopiedMessageId(msg.id))
+                                  .catch(() => setCopiedMessageId(msg.id));
+                              } else {
+                                setCopiedMessageId(msg.id);
+                              }
+                            }}
+                            style={{
+                              border: `1px solid ${copyBadgeBorder}`,
+                              background: copyBadgeBg,
+                              color: copyBadgeColor,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              padding: "0 10px",
+                              borderRadius: 999,
+                              cursor: "pointer",
+                              boxShadow: isLight
+                                ? "0 8px 18px rgba(0,0,0,0.12)"
+                                : "0 10px 22px rgba(0,0,0,0.25)",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              gap: 6,
+                              minWidth: 36,
+                              height: 32,
+                              transition: "transform 0.08s ease, box-shadow 0.15s ease",
+                            }}
+                            aria-label="Copiar mensaje"
+                          >
+                            <FiCopy
+                              aria-hidden="true"
+                              style={{
+                                fontSize: 16,
+                                color: copiedMessageId === msg.id ? palette.accent : copyBadgeColor,
+                                transition: "color 0.15s ease",
+                              }}
+                            />
+                          </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+                  <div ref={messagesEndRef} />
+                </>
+            </div>
 
               {showTopFade && (
                 <div className="chat-scroll-fade chat-scroll-fade--top" />
