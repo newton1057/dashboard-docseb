@@ -449,7 +449,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
   const hasSearch = searchTerm.trim() !== "";
   const isLight = appearance === "Claro";
 
-  const tableBackground = isLight ? "rgba(255,255,255,0.82)" : "rgba(3,23,24,0.30)";
+  const tableBackground = isLight ? "transparent" : "rgba(3,23,24,0.30)";
   const rowBgEven = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.20)";
   const rowBgOdd = isLight ? "rgba(14,36,27,0.14)" : "rgba(3,23,24,0.30)";
   const rowMenuBackground = isLight ? "rgba(255,255,255,0.98)" : "rgba(3,23,24,0.95)";
@@ -952,12 +952,15 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
 
   const dashStyle = { opacity: 0.65, color: palette.text, fontWeight: 700 };
 
+  // Color del score: verde lima en oscuro, ink en claro para mejor contraste
+  const scoreAccentColor = isLight ? "#082323" : palette.accent;
+
   const renderHistoricalScoreSummary = (summary) => {
     if (!summary) return null;
     if (summary.type === "IKDC") {
       return summary.valid ? (
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: palette.accent }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: scoreAccentColor }}>
             {summary.score}
             <span style={{ fontSize: 12, color: palette.text }}> / 100</span>
           </div>
@@ -974,7 +977,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
     if (summary.type === "LYSHOLM") {
       return (
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: palette.accent }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: scoreAccentColor }}>
             {summary.lysholmScore.score}
             <span style={{ fontSize: 12, color: palette.text }}> / 100</span>
           </div>
@@ -995,12 +998,12 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
       return (
         <div style={{ textAlign: "right" }}>
           <div style={{ fontSize: 12, color: palette.textMuted }}>Knee</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: palette.accent }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: scoreAccentColor }}>
             {iksScore.kneeScore ?? "—"}
             <span style={{ fontSize: 11, color: palette.text }}> / 100</span>
           </div>
           <div style={{ fontSize: 12, color: palette.textMuted, marginTop: 4 }}>Función</div>
-          <div style={{ fontSize: 18, fontWeight: 800, color: palette.accent }}>
+          <div style={{ fontSize: 18, fontWeight: 800, color: scoreAccentColor }}>
             {iksScore.functionScore ?? "—"}
             <span style={{ fontSize: 11, color: palette.text }}> / 100</span>
           </div>
@@ -1010,7 +1013,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
     if (summary.type === "WOMAC") {
       return (
         <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: 24, fontWeight: 800, color: palette.accent }}>
+          <div style={{ fontSize: 24, fontWeight: 800, color: scoreAccentColor }}>
             {summary.womacScore.normalized.total}%
           </div>
           <div style={{ fontSize: 11, color: summary.severity?.color ?? palette.text }}>
@@ -1082,16 +1085,18 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
   return (
     <main
       style={{
-        padding: "24px 32px",
-        display: "grid",
+        padding: "24px 32px 32px 32px",
+        display: "flex",
+        flexDirection: "column",
         gap: 18,
-        alignContent: "start",
-        justifyItems: "start",
         textAlign: "left",
+        height: "100%",
+        boxSizing: "border-box",
+        overflow: "hidden",
       }}
     >
       {/* Header */}
-      <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+      <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexShrink: 0 }}>
         <h1 style={{ fontSize: 24, margin: 0, fontWeight: 800, color: palette.text, textAlign: "left" }}>
           Formularios
         </h1>
@@ -1148,9 +1153,13 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
           overflow: "hidden",
           background: tableBackground,
           boxShadow: isLight ? "0 18px 40px rgba(0,0,0,0.18)" : "0 18px 60px rgba(0,0,0,0.35)",
+          flex: 1,
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
         }}
       >
-        <div style={{ maxHeight: 380, overflow: "auto" }}>
+        <div style={{ flex: 1, overflow: "auto", minHeight: 0 }}>
           <table
             style={{
               width: "100%",
@@ -2096,9 +2105,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
               width: "60vw",
               maxWidth: 860,
               border: `1px solid ${palette.border}`,
-              background: palette.surface,
+              background: isLight ? "rgba(255,255,255,0.98)" : palette.surface,
               borderRadius: 16,
-              boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
+              boxShadow: isLight ? "0 24px 80px rgba(0,0,0,0.25)" : "0 24px 80px rgba(0,0,0,0.6)",
               overflow: "hidden",
               maxHeight: "80vh",
               display: "grid",
@@ -2113,7 +2122,9 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                 gap: 12,
                 padding: "16px 20px",
                 borderBottom: `1px solid ${palette.border}`,
-                background: "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
+                background: isLight 
+                  ? "linear-gradient(180deg, rgba(247,255,236,0.95), rgba(229,242,213,0.9))" 
+                  : "linear-gradient(180deg, rgba(3,23,24,0.7), rgba(3,23,24,0.4))",
               }}
             >
               <div style={{ display: "grid", gap: 2 }}>
@@ -2134,7 +2145,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                   placeItems: "center",
                   border: `1px solid ${palette.border}`,
                   borderRadius: 12,
-                  background: "rgba(3,23,24,0.55)",
+                  background: isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.55)",
                   color: palette.text,
                   cursor: "pointer",
                   padding: 0,
@@ -2153,7 +2164,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                     padding: 16,
                     textAlign: "center",
                     color: palette.text,
-                    background: "rgba(3,23,24,0.35)",
+                    background: isLight ? "rgba(14,36,27,0.06)" : "rgba(3,23,24,0.35)",
                   }}
                 >
                   Aún no hay registros históricos para este formulario.
@@ -2168,10 +2179,11 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
                         style={{
                           border: `1px solid ${palette.border}`,
                           borderRadius: 14,
-                          background: "rgba(3,23,24,0.55)",
+                          background: isLight ? "rgba(255,255,255,0.95)" : "rgba(3,23,24,0.55)",
                           padding: 16,
                           display: "grid",
                           gap: 10,
+                          boxShadow: isLight ? "0 2px 8px rgba(0,0,0,0.06)" : "none",
                         }}
                       >
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>

@@ -635,7 +635,7 @@ const controlActiveSurface =
 
   return (
     <>
-      <div className="full-screen-dashboard">
+      <div className={`full-screen-dashboard ${resolvedAppearance === "Claro" ? "theme-light" : "theme-dark"}`}>
         <div
           style={{
             width: "100vw",
@@ -737,7 +737,7 @@ const controlActiveSurface =
               flex: 1,
               display: "flex",
               flexDirection: "column",
-              padding: "0 0 24px",
+              padding: 0,
               gap: 12,
               minHeight: 0,
               textAlign: "left",
@@ -844,15 +844,13 @@ const controlActiveSurface =
                   ? resolvedAppearance === "Claro"
                     ? "rgba(58,92,47,0.12)"
                     : "rgba(210,242,82,0.08)"
-                  : resolvedAppearance === "Claro"
-                    ? "rgba(8,35,35,0.04)"
-                    : "rgba(3,23,24,0.85)";
+                  : "transparent";
                 const hoverBackground = isSelected
                   ? resolvedAppearance === "Claro"
                     ? "rgba(58,92,47,0.16)"
                     : "rgba(210,242,82,0.12)"
                   : resolvedAppearance === "Claro"
-                    ? "rgba(8,35,35,0.08)"
+                    ? "rgba(8,35,35,0.06)"
                     : "rgba(233,255,208,0.08)";
                 const titleColor = resolvedAppearance === "Claro" ? "#0b2b2b" : palette.text;
                 const subtitleColor =
@@ -861,7 +859,7 @@ const controlActiveSurface =
                   resolvedAppearance === "Claro" ? "rgba(11,43,43,0.6)" : "rgba(233,255,208,0.7)";
                 const cardShadow =
                   resolvedAppearance === "Claro"
-                    ? "0 10px 24px rgba(0,0,0,0.16)"
+                    ? "none"
                     : "0 12px 30px rgba(0,0,0,0.35)";
                 const sessionIdLabel = showSessionId
                   ? sessionIdValue || "ID desconocido"

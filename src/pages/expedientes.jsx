@@ -126,6 +126,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
         ? "linear-gradient(180deg, rgba(14,36,27,0.08), rgba(14,36,27,0.04))"
         : "linear-gradient(180deg, rgba(3,23,24,0.65), rgba(3,23,24,0.35))";
     const modalCloseBackground = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.65)";
+    const sectionTitleColor = isLight ? "#082323" : palette.accent;
 
     useEffect(() => {
         let active = true;
@@ -906,18 +907,18 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
     return (
         <main
             style={{
-                padding: "24px 32px",
-                display: "grid",
+                padding: "24px 32px 32px 32px",
+                display: "flex",
+                flexDirection: "column",
                 gap: 18,
-                alignContent: "start",
-                justifyItems: "start",
                 textAlign: "left",
                 height: "100%",
                 boxSizing: "border-box",
+                overflow: "hidden",
             }}
         >
             {/* Header */}
-            <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <div style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexShrink: 0 }}>
                 <h1 style={{ fontSize: 24, margin: 0, fontWeight: 800, color: palette.text, textAlign: "left" }}>
                     Expedientes
                 </h1>
@@ -953,12 +954,13 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                     flex: 1,
                     display: "flex",
                     flexDirection: "column",
+                    minHeight: 0,
                 }}
             >
                 <div style={{
                     flex: 1,
                     overflow: "auto",
-                    maxHeight: "calc(100vh - 200px)",
+                    minHeight: 0,
                     scrollbarWidth: 'none', // Firefox
                     msOverflowStyle: 'none', // IE/Edge
                     WebkitOverflowScrolling: 'touch' // iOS smooth scrolling
@@ -1203,7 +1205,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                         <div style={{ padding: 24, overflowY: "auto", flex: 1, color: palette.textMuted, fontSize: 14 }}>
                             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, marginBottom: 24 }}>
                                 <div>
-                                    <h4 style={{ color: palette.accent, marginTop: 0, fontWeight: 800 }}>Paciente</h4>
+                                    <h4 style={{ color: sectionTitleColor, marginTop: 0, fontWeight: 800 }}>Paciente</h4>
                                     <p><strong style={{ color: palette.text }}>Nombre:</strong> {detailsModal.patient?.name?.given.join(" ")} {detailsModal.patient?.name?.family}</p>
                                     <p><strong style={{ color: palette.text }}>ID:</strong> {detailsModal.patient?.patient_id}</p>
                                     <p><strong style={{ color: palette.text }}>Fecha Nacimiento:</strong> {detailsModal.patient?.birth_date}</p>
@@ -1211,7 +1213,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                                     <p><strong style={{ color: palette.text }}>Teléfono:</strong> {detailsModal.patient?.telecom?.find(t => t.system === 'phone')?.value || '—'}</p>
                                 </div>
                                 <div>
-                                    <h4 style={{ color: palette.accent, marginTop: 0, fontWeight: 800 }}>Contacto de Emergencia</h4>
+                                    <h4 style={{ color: sectionTitleColor, marginTop: 0, fontWeight: 800 }}>Contacto de Emergencia</h4>
                                     {detailsModal.patient?.emergency_contact?.map((contact, i) => (
                                         <div key={i}>
                                             <p><strong style={{ color: palette.text }}>Nombre:</strong> {contact.name}</p>
@@ -1223,7 +1225,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                             </div>
 
                             <div style={{ marginBottom: 24 }}>
-                                <h4 style={{ color: palette.accent, fontWeight: 800 }}>Diagnósticos Activos</h4>
+                                <h4 style={{ color: sectionTitleColor, fontWeight: 800 }}>Diagnósticos Activos</h4>
                                 <ul style={{ paddingLeft: 20 }}>
                                     {detailsModal.diagnoses?.map((dx) => (
                                         <li key={dx.diagnosis_id} style={{ marginBottom: 8 }}>
@@ -1238,7 +1240,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                             </div>
 
                             <div style={{ marginBottom: 24 }}>
-                                <h4 style={{ color: palette.accent, fontWeight: 800 }}>Medicamentos Activos</h4>
+                                <h4 style={{ color: sectionTitleColor, fontWeight: 800 }}>Medicamentos Activos</h4>
                                 <ul style={{ paddingLeft: 20 }}>
                                     {detailsModal.medications?.active?.map((med) => (
                                         <li key={med.medication_request_id} style={{ marginBottom: 8 }}>
@@ -1251,7 +1253,7 @@ export default function ExpedientesMain({ palette, appearance = "Oscuro" }) {
                             </div>
 
                             <div>
-                                <h4 style={{ color: palette.accent, fontWeight: 800 }}>Antecedentes</h4>
+                                <h4 style={{ color: sectionTitleColor, fontWeight: 800 }}>Antecedentes</h4>
                                 <p><strong style={{ color: palette.text }}>Alergias:</strong> {detailsModal.antecedents?.allergies?.map(a => `${a.substance?.display} (${a.reaction?.[0]?.manifestation?.join(", ")})`).join("; ") || "Ninguna"}</p>
                                 <p><strong style={{ color: palette.text }}>Quirúrgicos:</strong> {detailsModal.antecedents?.surgical_history?.map(s => `${s.procedure} (${s.date})`).join("; ") || "Ninguno"}</p>
                                 <p><strong style={{ color: palette.text }}>Familiares:</strong> {detailsModal.antecedents?.family_history?.map(f => `${f.relative}: ${f.condition}`).join("; ") || "Ninguno"}</p>
