@@ -449,7 +449,7 @@ export default function DashboardMain({ palette, appearance = "Oscuro" }) {
   const hasSearch = searchTerm.trim() !== "";
   const isLight = appearance === "Claro";
 
-  const tableBackground = isLight ? "transparent" : "rgba(3,23,24,0.30)";
+  const tableBackground = isLight ? "rgba(255,255,255,0.85)" : "rgba(3,23,24,0.30)";
   const rowBgEven = isLight ? "rgba(14,36,27,0.08)" : "rgba(3,23,24,0.20)";
   const rowBgOdd = isLight ? "rgba(14,36,27,0.14)" : "rgba(3,23,24,0.30)";
   const rowMenuBackground = isLight ? "rgba(255,255,255,0.98)" : "rgba(3,23,24,0.95)";

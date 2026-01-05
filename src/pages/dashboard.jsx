@@ -1081,10 +1081,12 @@ const controlActiveSurface =
               borderBottom: `1px solid ${palette.border}`,
               background: topbarBackground,
               backdropFilter: "blur(6px)",
+              position: "relative",
+              zIndex: 100,
             }}
           >
             <div />
-            <div style={{ position: "relative" }}>
+            <div style={{ position: "relative", zIndex: 1000 }}>
               <button
                 ref={avatarRef}
                 onClick={() => setIsMenuOpen((value) => !value)}
@@ -1132,7 +1134,7 @@ const controlActiveSurface =
                     borderRadius: 8,
                     padding: 8,
                     boxShadow: "0 10px 30px rgba(0, 0, 0, 0.3)",
-                    zIndex: 10,
+                    zIndex: 1001,
                   }}
                 >
                   <button
