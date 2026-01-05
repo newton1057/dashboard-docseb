@@ -1,7 +1,6 @@
 // src/pages/Dashboard.jsx
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ButterflyIcon } from "../utils/icons";
 import DashboardMain from "./main";
 import ChatMain from "./chat";
 import { clearSession, isSessionValid, markSessionStart } from "../utils/auth";
@@ -441,7 +440,11 @@ export default function Dashboard() {
               gap: 10,
             }}
           >
-            <ButterflyIcon width="28px" />
+            <img
+              src="https://firebasestorage.googleapis.com/v0/b/docseb-abg.firebasestorage.app/o/setup%2FABG%20Icon%20Background.png?alt=media&token=77f0ac9b-a17d-4bfe-bdda-8947bee25927"
+              alt="ABG"
+              style={{ width: 120, height: "auto" }}
+            />
           </div>
 
           <div

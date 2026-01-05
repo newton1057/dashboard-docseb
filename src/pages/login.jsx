@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ButterflyIcon } from "../utils/icons";
 import { isSessionValid, markSessionStart } from "../utils/auth";
 
 const PIN_LENGTH = 6;
@@ -98,7 +97,11 @@ export default function Login() {
         }}
       >
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 32 }}>
-          <ButterflyIcon width="10%" />
+          <img
+            src="https://firebasestorage.googleapis.com/v0/b/docseb-abg.firebasestorage.app/o/setup%2FABG%20Icon%20Background.png?alt=media&token=77f0ac9b-a17d-4bfe-bdda-8947bee25927"
+            alt="ABG"
+            style={{ width: "35%", height: "auto" }}
+          />
         </div>
 
         <h1
