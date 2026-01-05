@@ -19,11 +19,11 @@ const palette = {
 };
 
 const CONVERSATIONS_ENDPOINT =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversations";
+  "https://docseb-ai-867466317608.northamerica-south1.run.app/modelsAI/conversations";
 const CONVERSATION_DETAIL_ENDPOINT =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversation";
+  "https://docseb-ai-867466317608.northamerica-south1.run.app/modelsAI/conversation";
 const DELETE_CONVERSATION_ENDPOINT =
-  "https://delete-chat-229745866329.northamerica-south1.run.app";
+  "https://delete-chat-867466317608.northamerica-south1.run.app";
 const LOOKER_EMBED_URL =
   "https://lookerstudio.google.com/embed/reporting/1a6767f6-18d9-48e7-a247-2e9131b7378a/page/9F1bF";
 

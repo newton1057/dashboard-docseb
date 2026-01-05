@@ -173,9 +173,9 @@ const ROUTES = {
   KOOS: "/KOOS",
 };
 
-const RECORDS_ENDPOINT = "https://get-forms-229745866329.northamerica-south1.run.app";
+const RECORDS_ENDPOINT = "https://get-forms-867466317608.northamerica-south1.run.app";
 const CONVERSATION_ENDPOINT =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/conversation";
+  "https://docseb-ai-867466317608.northamerica-south1.run.app/modelsAI/conversation";
 
 const TABLE_COLUMNS = [
   { key: "email", label: "Email" },

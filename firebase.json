@@ -1,17 +1,14 @@
 {
   "hosting": {
-    "site": "ima-sebastianarmida",
-    "public": "dist",
+    "site": "abg-sebastianarmida",
+    "source": ".",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ]
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
   }
 }

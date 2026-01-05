@@ -8,7 +8,7 @@ import remarkGfm from "remark-gfm";
 import "./chat.css";
 
 const API_URL =
-  "https://docseb-ai-229745866329.northamerica-south1.run.app/modelsAI/message";
+  "https://docseb-ai-867466317608.northamerica-south1.run.app/modelsAI/message";
 const SESSION_ID_LENGTH = 8;
 const SESSION_CHARSET =
   "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";

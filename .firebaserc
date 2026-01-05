@@ -1,6 +1,7 @@
 {
   "projects": {
-    "default": "docseb"
+    "default": "docseb-abg",
+    "docseb-abg": "docseb-abg"
   },
   "targets": {},
   "etags": {}
