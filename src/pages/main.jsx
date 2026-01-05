@@ -164,7 +164,7 @@ export const ikdcQuestions = [
 
 const IKDC_SCORABLE_COUNT = ikdcQuestions.filter((q) => !q.excludeFromScore).length;
 // Base y rutas
-const BASE_URL = "https://docseb.preguntaleaima.com";
+const BASE_URL = "https://docseb-abg.web.app";
 const ROUTES = {
   IKDC: "/IKDC",
   "LYSHOLM-TEGNER": "/LYSHOLM-TEGNER",
